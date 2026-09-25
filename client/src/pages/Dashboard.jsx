@@ -18,6 +18,9 @@ import {
   FaBriefcase,
   FaUsers,
   FaHistory,
+  FaArrowRight,
+  FaCheck,
+  FaBolt,
 } from "react-icons/fa";
 
 function Dashboard() {
@@ -44,7 +47,6 @@ function Dashboard() {
         }
 
         const response = await api.get("/dashboard");
-
         setDashboardData(response.data.data);
       } catch (error) {
         console.error("Dashboard fetch error:", error);
@@ -57,7 +59,7 @@ function Dashboard() {
   }, [navigate]);
 
   // =====================================================
-  // FETCH CURRENT LOGGED-IN USER
+  // FETCH CURRENT USER
   // =====================================================
 
   useEffect(() => {
@@ -68,7 +70,6 @@ function Dashboard() {
         if (!token) return;
 
         const response = await api.get("/auth/me");
-
         setUser(response.data.user);
       } catch (error) {
         console.error("User fetch error:", error);
@@ -85,7 +86,6 @@ function Dashboard() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-
     navigate("/login");
   };
 
@@ -98,8 +98,7 @@ function Dashboard() {
     user?.name ||
     "User";
 
-  const firstName =
-    userName.split(" ")[0];
+  const firstName = userName.split(" ")[0];
 
   const userInitial =
     userName.charAt(0).toUpperCase();
@@ -110,10 +109,11 @@ function Dashboard() {
     null;
 
   // =====================================================
-  // DATA
+  // DASHBOARD DATA
   // =====================================================
 
-  const atsScore = dashboardData?.resume?.atsScore ?? 0;
+  const atsScore =
+    dashboardData?.resume?.atsScore ?? 0;
 
   const interviewCount =
     dashboardData?.interviews?.count ?? 0;
@@ -137,7 +137,7 @@ function Dashboard() {
     dashboardData?.studyPlan?.hoursPerDay ?? 0;
 
   // =====================================================
-  // ATS STATUS
+  // STATUS
   // =====================================================
 
   const atsStatus =
@@ -149,10 +149,6 @@ function Dashboard() {
       ? "Needs Improvement"
       : "Not Analyzed";
 
-  // =====================================================
-  // INTERVIEW STATUS
-  // =====================================================
-
   const interviewStatus =
     latestInterviewScore === null
       ? "Not Started"
@@ -161,6 +157,10 @@ function Dashboard() {
       : latestInterviewScore >= 6
       ? "Good"
       : "Keep Practicing";
+
+  // =====================================================
+  // NAVIGATION
+  // =====================================================
 
   const navItems = [
     {
@@ -224,20 +224,17 @@ function Dashboard() {
 
       <aside
         className={`
-          relative
+          hidden md:flex
+          fixed left-0 top-0 bottom-0 z-30
           bg-white
-          border-r
-          border-[var(--secondary)]
-          hidden
-          md:flex
+          border-r border-[var(--secondary)]
           flex-col
-          transition-all
-          duration-300
+          transition-all duration-300
           ${sidebarOpen ? "w-64" : "w-20"}
         `}
       >
 
-        {/* Logo */}
+        {/* LOGO */}
 
         <div className="h-20 px-5 border-b border-[var(--secondary)] flex items-center justify-between">
 
@@ -251,50 +248,54 @@ function Dashboard() {
           ) : (
             <Link
               to="/dashboard"
-              className="text-xl font-bold text-[var(--primary)]"
+              className="text-xl font-bold text-[var(--primary)] mx-auto"
             >
               IP
             </Link>
           )}
 
-          {/* Separate Sidebar Toggle */}
-
-          <button
-            onClick={() =>
-              setSidebarOpen(!sidebarOpen)
-            }
-            className="
-              w-8
-              h-8
-              flex
-              items-center
-              justify-center
-              rounded-lg
-              border
-              border-[var(--secondary)]
-              text-gray-500
-              hover:text-[var(--primary)]
-              hover:bg-[var(--background)]
-              transition
-            "
-            title={
-              sidebarOpen
-                ? "Hide Sidebar"
-                : "Show Sidebar"
-            }
-          >
-            {sidebarOpen ? (
+          {sidebarOpen && (
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="
+                w-8 h-8
+                flex items-center justify-center
+                rounded-lg
+                border border-[var(--secondary)]
+                text-gray-500
+                hover:text-[var(--primary)]
+                hover:bg-[var(--background)]
+                transition
+              "
+            >
               <FaChevronLeft />
-            ) : (
+            </button>
+          )}
+
+          {!sidebarOpen && (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="
+                absolute -right-4 top-6
+                w-8 h-8
+                bg-white
+                border border-[var(--secondary)]
+                rounded-full
+                flex items-center justify-center
+                text-gray-500
+                hover:text-[var(--primary)]
+                shadow-sm
+              "
+            >
               <FaChevronRight />
-            )}
-          </button>
+            </button>
+          )}
 
         </div>
 
-        {/* Navigation */}
+        {/* NAVIGATION */}
 
-        <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
 
           {navItems.map((item) => {
 
@@ -305,14 +306,9 @@ function Dashboard() {
               <Link
                 key={item.name}
                 to={item.path}
-                title={
-                  sidebarOpen
-                    ? ""
-                    : item.name
-                }
+                title={!sidebarOpen ? item.name : ""}
                 className={`
-                  flex
-                  items-center
+                  flex items-center
                   ${sidebarOpen
                     ? "gap-3 px-4"
                     : "justify-center px-2"
@@ -322,57 +318,47 @@ function Dashboard() {
                   transition
                   ${
                     isActive
-                      ? "bg-[var(--background)] text-[var(--primary)]"
+                      ? "bg-[var(--background)] text-[var(--primary)] font-semibold"
                       : "text-[var(--text)] hover:bg-[var(--background)] hover:text-[var(--primary)]"
                   }
                 `}
               >
-
-                <span className="text-lg">
+                <span className="text-lg shrink-0">
                   {item.icon}
                 </span>
 
                 {sidebarOpen && (
-                  <span className="text-sm font-medium whitespace-nowrap">
+                  <span className="text-sm whitespace-nowrap">
                     {item.name}
                   </span>
                 )}
-
               </Link>
             );
           })}
 
         </nav>
 
-        {/* Logout */}
+        {/* LOGOUT */}
 
         <div className="p-3 border-t border-[var(--secondary)]">
 
           <button
             onClick={handleLogout}
-            title={
-              sidebarOpen
-                ? ""
-                : "Logout"
-            }
+            title={!sidebarOpen ? "Logout" : ""}
             className={`
-              w-full
-              flex
-              items-center
-              ${
-                sidebarOpen
-                  ? "gap-3 px-4"
-                  : "justify-center px-2"
+              w-full flex items-center
+              ${sidebarOpen
+                ? "gap-3 px-4"
+                : "justify-center px-2"
               }
               py-3
               rounded-xl
-              text-[var(--text)]
+              text-gray-600
               hover:bg-[var(--background)]
               hover:text-[var(--primary)]
               transition
             `}
           >
-
             <FaSignOutAlt />
 
             {sidebarOpen && (
@@ -380,7 +366,6 @@ function Dashboard() {
                 Logout
               </span>
             )}
-
           </button>
 
         </div>
@@ -388,241 +373,493 @@ function Dashboard() {
       </aside>
 
       {/* =====================================================
-          MAIN CONTENT
+          MAIN
       ===================================================== */}
 
-      <main className="flex-1 min-w-0">
+      <main
+        className={`
+          flex-1 min-w-0
+          transition-all duration-300
+          ${sidebarOpen ? "md:ml-64" : "md:ml-20"}
+        `}
+      >
 
-        {/* Top Navbar */}
+        {/* =====================================================
+            TOP BAR
+        ===================================================== */}
 
-        <header className="bg-white border-b border-[var(--secondary)] px-6 py-4 flex justify-between items-center">
+        <header className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-[var(--secondary)]">
 
-          <div>
+          <div className="px-5 md:px-8 py-4 flex items-center justify-between">
 
-            <p className="text-sm text-gray-500">
-              InterviewPath AI
-            </p>
+          <div className="flex items-center gap-4">
 
-            <h2 className="text-xl font-bold text-[var(--text)]">
-              Dashboard
-            </h2>
+  <Link
+    to="/home"
+    className="
+      inline-flex
+      items-center
+      gap-2
+      px-3
+      py-2
+      rounded-lg
+      border
+      border-[var(--secondary)]
+      text-sm
+      font-medium
+      text-gray-600
+      hover:text-[var(--primary)]
+      hover:bg-[var(--background)]
+      transition
+    "
+  >
+    <FaHome className="text-xs" />
+    Home
+  </Link>
 
-          </div>
+  <div className="h-8 w-px bg-[var(--secondary)]" />
 
-          {/* User */}
+  <div>
+    <p className="text-xs font-semibold tracking-widest uppercase text-[var(--primary)]">
+      InterviewPath AI
+    </p>
 
-          <div
-            onClick={() =>
-              navigate("/profile")
-            }
-            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition"
-          >
+    <h2 className="text-lg font-bold text-[var(--text)] mt-0.5">
+      Dashboard
+    </h2>
+  </div>
 
-            <div className="w-10 h-10 bg-[var(--primary)] text-white rounded-full flex items-center justify-center font-semibold overflow-hidden">
+</div>
 
-              {profileImage ? (
-                <img
-                  src={profileImage}
-                  alt={userName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                userInitial
-              )}
+            <button
+              onClick={() => navigate("/profile")}
+              className="flex items-center gap-3 hover:opacity-80 transition"
+            >
 
-            </div>
+              <div className="
+                w-10 h-10
+                rounded-full
+                bg-[var(--primary)]
+                text-white
+                flex items-center justify-center
+                font-semibold
+                overflow-hidden
+              ">
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt={userName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  userInitial
+                )}
+              </div>
 
-            <div className="hidden sm:block">
+              <div className="hidden sm:block text-left">
+                <p className="font-semibold text-sm text-[var(--text)]">
+                  {userName}
+                </p>
 
-              <p className="font-semibold text-[var(--text)]">
-                {userName}
-              </p>
+                <p className="text-xs text-gray-500">
+                  {user?.role === "admin"
+                    ? "Administrator"
+                    : "Candidate"}
+                </p>
+              </div>
 
-              <p className="text-xs text-gray-500">
-                {user?.role === "admin"
-                  ? "Administrator"
-                  : "Candidate"}
-              </p>
-
-            </div>
+            </button>
 
           </div>
 
         </header>
 
-        {/* Dashboard Content */}
+        {/* =====================================================
+            CONTENT
+        ===================================================== */}
 
-        <div className="p-6 md:p-8 max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto px-5 md:px-8 py-8">
 
-          {/* WELCOME */}
+          {/* =================================================
+              HERO
+          ================================================= */}
 
-          <div className="mb-8">
+          <section className="
+            relative
+            overflow-hidden
+            rounded-3xl
+            bg-white
+            border border-[var(--secondary)]
+            p-7 md:p-9
+            mb-7
+          ">
 
-            <span className="inline-block text-sm font-semibold text-[var(--primary)] bg-white border border-[var(--secondary)] px-4 py-2 rounded-full">
-              Your Preparation Hub
-            </span>
+            {/* Decorative shape */}
 
-            <h1 className="text-3xl md:text-4xl font-bold text-[var(--text)] mt-5">
-              Welcome back, {firstName} 👋
-            </h1>
+            <div className="
+              absolute
+              -right-20
+              -top-24
+              w-64 h-64
+              rounded-full
+              bg-[var(--background)]
+            " />
 
-            <p className="text-gray-500 mt-2 text-lg">
-              Let's continue your interview preparation.
-            </p>
+            <div className="
+              absolute
+              right-16
+              -bottom-20
+              w-40 h-40
+              rounded-full
+              bg-[var(--soft-pink)]
+              opacity-40
+            " />
 
-          </div>
+            <div className="relative">
 
-          {/* STATS */}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-
-            {/* Resume ATS */}
-
-            <div className="bg-white rounded-2xl border border-[var(--secondary)] p-6 shadow-sm hover:shadow-md transition">
-
-              <div className="flex items-center justify-between">
-
-                <p className="text-gray-500 text-sm">
-                  Resume ATS Score
-                </p>
-
-                <FaFileAlt className="text-[var(--primary)]" />
-
+              <div className="
+                inline-flex items-center gap-2
+                px-3 py-1.5
+                rounded-full
+                bg-[var(--background)]
+                border border-[var(--secondary)]
+                text-[var(--primary)]
+                text-xs font-semibold
+              ">
+                <FaBolt className="text-[10px]" />
+                YOUR PREPARATION HUB
               </div>
 
-              <div className="flex items-end justify-between mt-3">
+              <h1 className="
+                text-3xl md:text-4xl
+                font-bold
+                text-[var(--text)]
+                mt-5
+              ">
+                Welcome back, {firstName} 👋
+              </h1>
 
-                <h2 className="text-3xl font-bold text-[var(--primary)]">
-                  {loading
+              <p className="
+                text-gray-500
+                mt-2
+                max-w-xl
+                text-base md:text-lg
+              ">
+                Everything you need to prepare, practice,
+                and become interview-ready.
+              </p>
+
+            </div>
+
+          </section>
+
+          {/* =================================================
+              OVERVIEW
+          ================================================= */}
+
+          <section className="mb-8">
+
+            <SectionHeading
+              title="Your Overview"
+              description="A quick look at your preparation progress."
+            />
+
+            <div className="
+              grid
+              grid-cols-1
+              sm:grid-cols-2
+              lg:grid-cols-3
+              gap-4
+            ">
+
+              {/* ATS */}
+
+              <OverviewCard
+                icon={<FaFileAlt />}
+                label="Resume ATS Score"
+                value={loading ? "..." : `${atsScore}%`}
+                status={atsStatus}
+                progress={atsScore}
+                description={
+                  dashboardData?.resume
+                    ? "Based on your latest resume analysis."
+                    : "Analyze your resume to get your score."
+                }
+                primary
+              />
+
+              {/* INTERVIEWS */}
+
+              <OverviewCard
+                icon={<FaMicrophone />}
+                label="Mock Interviews"
+                value={loading ? "..." : interviewCount}
+                status={interviewStatus}
+                description={
+                  latestInterviewScore !== null
+                    ? `Latest score: ${latestInterviewScore}/10`
+                    : "Start your first AI interview."
+                }
+              />
+
+              {/* STUDY PLAN */}
+
+              <OverviewCard
+                icon={<FaRoute />}
+                label="Study Plan"
+                value={
+                  loading
                     ? "..."
-                    : `${atsScore}%`}
-                </h2>
-
-                <span className="text-sm font-semibold text-[var(--primary)]">
-                  {atsStatus}
-                </span>
-
-              </div>
-
-              <div className="w-full bg-[var(--background)] rounded-full h-2 mt-5">
-
-                <div
-                  className="bg-[var(--primary)] h-2 rounded-full transition-all duration-500"
-                  style={{
-                    width: `${Math.min(
-                      Math.max(atsScore, 0),
-                      100
-                    )}%`,
-                  }}
-                />
-
-              </div>
-
-              <p className="text-sm text-gray-500 mt-2">
-
-                {dashboardData?.resume
-                  ? "Based on your latest resume analysis."
-                  : "Analyze your resume to get your ATS score."}
-
-              </p>
+                    : studyPlanExists
+                    ? studyPlanTopic
+                    : "Not Created"
+                }
+                status={
+                  studyPlanExists
+                    ? `${studyPlanDays} days`
+                    : "Get started"
+                }
+                description={
+                  studyPlanExists
+                    ? `${studyPlanHours} hrs/day`
+                    : "Create your personalized study plan."
+                }
+              />
 
             </div>
 
-            {/* Mock Interviews */}
+          </section>
 
-            <div className="bg-white rounded-2xl border border-[var(--secondary)] p-6 shadow-sm hover:shadow-md transition">
+          {/* =================================================
+              PREPARATION
+          ================================================= */}
 
-              <div className="flex items-center justify-between">
+          <section className="mb-8">
 
-                <p className="text-gray-500 text-sm">
-                  Mock Interviews
-                </p>
+            <SectionHeading
+              title="Your Preparation"
+              description="See where you currently stand."
+            />
 
-                <FaMicrophone className="text-[var(--primary)]" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+              {/* RESUME */}
+
+              <div className="
+                bg-white
+                border border-[var(--secondary)]
+                rounded-2xl
+                p-6
+              ">
+
+                <div className="flex items-start justify-between">
+
+                  <div className="
+                    w-11 h-11
+                    rounded-xl
+                    bg-[var(--background)]
+                    text-[var(--primary)]
+                    flex items-center justify-center
+                  ">
+                    <FaFileAlt />
+                  </div>
+
+                  <span className="
+                    text-xs font-semibold
+                    px-3 py-1.5
+                    rounded-full
+                    bg-[var(--background)]
+                    text-[var(--primary)]
+                  ">
+                    {atsStatus}
+                  </span>
+
+                </div>
+
+                <div className="mt-5">
+
+                  <p className="text-sm text-gray-500">
+                    Resume Analysis
+                  </p>
+
+                  <div className="flex items-end gap-2 mt-1">
+                    <span className="
+                      text-3xl
+                      font-bold
+                      text-[var(--primary)]
+                    ">
+                      {loading ? "..." : `${atsScore}%`}
+                    </span>
+
+                    <span className="text-sm text-gray-400 mb-1">
+                      ATS score
+                    </span>
+                  </div>
+
+                  <div className="
+                    h-2
+                    bg-[var(--background)]
+                    rounded-full
+                    mt-4
+                    overflow-hidden
+                  ">
+                    <div
+                      className="
+                        h-full
+                        bg-[var(--primary)]
+                        rounded-full
+                        transition-all duration-700
+                      "
+                      style={{
+                        width: `${Math.min(
+                          Math.max(atsScore, 0),
+                          100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+
+                  <p className="text-sm text-gray-500 mt-3">
+                    {dashboardData?.resume
+                      ? dashboardData.resume.fileName
+                      : "Upload and analyze your resume."}
+                  </p>
+
+                </div>
+
+                <Link
+                  to="/resume-analyzer"
+                  className="
+                    inline-flex items-center gap-2
+                    mt-5
+                    text-sm font-semibold
+                    text-[var(--primary)]
+                    hover:gap-3
+                    transition-all
+                  "
+                >
+                  {dashboardData?.resume
+                    ? "View Analysis"
+                    : "Analyze Resume"}
+                  <FaArrowRight className="text-xs" />
+                </Link>
 
               </div>
 
-              <div className="flex items-end justify-between mt-3">
+              {/* INTERVIEW */}
 
-                <h2 className="text-3xl font-bold text-[var(--text)]">
-                  {loading
-                    ? "..."
-                    : interviewCount}
-                </h2>
+              <div className="
+                bg-white
+                border border-[var(--secondary)]
+                rounded-2xl
+                p-6
+              ">
 
-                <span className="text-sm font-semibold text-[var(--primary)]">
-                  {interviewStatus}
-                </span>
+                <div className="flex items-start justify-between">
+
+                  <div className="
+                    w-11 h-11
+                    rounded-xl
+                    bg-[var(--background)]
+                    text-[var(--primary)]
+                    flex items-center justify-center
+                  ">
+                    <FaMicrophone />
+                  </div>
+
+                  <span className="
+                    text-xs font-semibold
+                    px-3 py-1.5
+                    rounded-full
+                    bg-[var(--background)]
+                    text-[var(--primary)]
+                  ">
+                    {interviewStatus}
+                  </span>
+
+                </div>
+
+                <div className="mt-5">
+
+                  <p className="text-sm text-gray-500">
+                    Latest Interview
+                  </p>
+
+                  <div className="flex items-end gap-2 mt-1">
+
+                    <span className="
+                      text-3xl
+                      font-bold
+                      text-[var(--text)]
+                    ">
+                      {latestInterviewScore !== null
+                        ? `${latestInterviewScore}/10`
+                        : "—"}
+                    </span>
+
+                    {latestInterviewRole && (
+                      <span className="text-sm text-gray-400 mb-1">
+                        {latestInterviewRole}
+                      </span>
+                    )}
+
+                  </div>
+
+                  <p className="text-sm text-gray-500 mt-4">
+                    {latestInterviewScore !== null
+                      ? `You've completed ${interviewCount} mock interview${
+                          interviewCount !== 1 ? "s" : ""
+                        }.`
+                      : "Practice with an AI-powered mock interview."}
+                  </p>
+
+                </div>
+
+                <Link
+                  to="/mock-interview"
+                  className="
+                    inline-flex items-center gap-2
+                    mt-5
+                    text-sm font-semibold
+                    text-[var(--primary)]
+                    hover:gap-3
+                    transition-all
+                  "
+                >
+                  {latestInterviewScore !== null
+                    ? "Practice Again"
+                    : "Start Interview"}
+                  <FaArrowRight className="text-xs" />
+                </Link>
 
               </div>
 
-              <p className="text-sm text-gray-500 mt-2">
-
-                {latestInterviewScore !== null
-                  ? `Latest score: ${latestInterviewScore}/10`
-                  : "Start your first AI interview."}
-
-              </p>
-
             </div>
 
-            {/* Study Plan */}
+          </section>
 
-            <div className="bg-white rounded-2xl border border-[var(--secondary)] p-6 shadow-sm hover:shadow-md transition">
+          {/* =================================================
+              PROGRESS
+          ================================================= */}
 
-              <div className="flex items-center justify-between">
+          <section className="
+            bg-white
+            border border-[var(--secondary)]
+            rounded-2xl
+            p-6 md:p-7
+            mb-8
+          ">
 
-                <p className="text-gray-500 text-sm">
-                  Study Plan
-                </p>
-
-                <FaRoute className="text-[var(--primary)]" />
-
-              </div>
-
-              <h2 className="text-xl font-bold text-[var(--text)] mt-3">
-
-                {loading
-                  ? "..."
-                  : studyPlanExists
-                  ? studyPlanTopic
-                  : "Not Created"}
-
-              </h2>
-
-              <p className="text-sm text-gray-500 mt-2">
-
-                {studyPlanExists
-                  ? `${studyPlanDays} days • ${studyPlanHours} hrs/day`
-                  : "Create your personalized study plan."}
-
-              </p>
-
-            </div>
-
-          </div>
-
-          {/* YOUR PROGRESS */}
-
-          <div className="mt-8 bg-white rounded-2xl border border-[var(--secondary)] shadow-sm p-6 md:p-7">
-
-            <div className="mb-6">
-
-              <h2 className="text-xl font-bold text-[var(--text)]">
-                Your Progress
-              </h2>
-
-              <p className="text-sm text-gray-500 mt-1">
-                Track your AI-powered preparation activities.
-              </p>
-
-            </div>
+            <SectionHeading
+              title="Your Progress"
+              description="Complete these core preparation activities."
+            />
 
             <div className="space-y-6">
 
               <ProgressItem
                 title="Resume Analysis"
-                description="Analyze your resume"
+                description="Analyze your resume and improve your ATS score."
                 current={dashboardData?.resume ? 1 : 0}
                 total={1}
                 icon={<FaFileAlt />}
@@ -630,7 +867,7 @@ function Dashboard() {
 
               <ProgressItem
                 title="Mock Interview"
-                description="Complete an AI interview"
+                description="Complete an AI-powered interview session."
                 current={interviewCount > 0 ? 1 : 0}
                 total={1}
                 icon={<FaMicrophone />}
@@ -641,7 +878,7 @@ function Dashboard() {
                 description={
                   studyPlanExists
                     ? `Learning ${studyPlanTopic}`
-                    : "Create a personalized study plan"
+                    : "Create a personalized study plan."
                 }
                 current={studyPlanExists ? 1 : 0}
                 total={1}
@@ -650,114 +887,115 @@ function Dashboard() {
 
             </div>
 
-          </div>
+          </section>
 
-          {/* LATEST ACTIVITY */}
+          {/* =================================================
+              STUDY PLAN
+          ================================================= */}
 
-          <div className="mt-8">
+          <section className="
+            bg-[var(--primary)]
+            rounded-2xl
+            p-6 md:p-7
+            text-white
+            mb-8
+            relative overflow-hidden
+          ">
 
-            <div className="mb-5">
+            <div className="
+              absolute
+              -right-12
+              -top-16
+              w-48 h-48
+              rounded-full
+              bg-white/5
+            " />
 
-              <h2 className="text-xl font-bold text-[var(--text)]">
-                Latest Activity
-              </h2>
+            <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
 
-              <p className="text-sm text-gray-500 mt-1">
-                Your most recent preparation activity.
-              </p>
+              <div>
 
-            </div>
+                <div className="flex items-center gap-2 text-white/70 text-xs font-semibold uppercase tracking-wider">
+                  <FaRoute />
+                  Study Roadmap
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-              <ActivityCard
-                icon={<FaFileAlt />}
-                title="Resume Analysis"
-                value={
-                  dashboardData?.resume
-                    ? `${atsScore}% ATS`
-                    : "Not analyzed"
-                }
-                description={
-                  dashboardData?.resume
-                    ? dashboardData.resume.fileName
-                    : "Upload your resume"
-                }
-              />
-
-              <ActivityCard
-                icon={<FaChartLine />}
-                title="Latest Interview"
-                value={
-                  latestInterviewScore !== null
-                    ? `${latestInterviewScore}/10`
-                    : "Not completed"
-                }
-                description={
-                  latestInterviewRole ||
-                  "Start an AI mock interview"
-                }
-              />
-
-              <ActivityCard
-                icon={<FaBookOpen />}
-                title="Study Planner"
-                value={
-                  studyPlanExists
+                <h2 className="text-2xl font-bold mt-3">
+                  {studyPlanExists
                     ? studyPlanTopic
-                    : "Not created"
-                }
-                description={
-                  studyPlanExists
-                    ? `${studyPlanDays} days • ${studyPlanHours} hrs/day`
-                    : "Create a personalized plan"
-                }
-              />
+                    : "Build your personalized roadmap"}
+                </h2>
+
+                <p className="text-white/70 text-sm mt-2">
+                  {studyPlanExists
+                    ? `${studyPlanDays} days • ${studyPlanHours} hours per day`
+                    : "Plan what to learn and stay consistent."}
+                </p>
+
+              </div>
+
+              <Link
+                to="/study-planner"
+                className="
+                  shrink-0
+                  inline-flex items-center justify-center gap-2
+                  bg-white
+                  text-[var(--primary)]
+                  px-5 py-3
+                  rounded-xl
+                  text-sm font-semibold
+                  hover:bg-[var(--background)]
+                  transition
+                "
+              >
+                {studyPlanExists
+                  ? "Continue Plan"
+                  : "Create Plan"}
+                <FaArrowRight className="text-xs" />
+              </Link>
 
             </div>
 
-          </div>
+          </section>
 
-          {/* QUICK ACTIONS */}
+          {/* =================================================
+              QUICK ACTIONS
+          ================================================= */}
 
-          <div className="mt-8">
+          <section>
 
-            <div className="mb-5">
+            <SectionHeading
+              title="Continue Preparing"
+              description="Jump directly into your next activity."
+            />
 
-              <h2 className="text-xl font-bold text-[var(--text)]">
-                Quick Actions
-              </h2>
-
-              <p className="text-sm text-gray-500 mt-1">
-                Jump directly into your preparation.
-              </p>
-
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="
+              grid
+              grid-cols-1
+              sm:grid-cols-2
+              lg:grid-cols-4
+              gap-4
+            ">
 
               <QuickAction
                 to="/mock-interview"
                 icon={<FaMicrophone />}
                 title="AI Mock Interview"
                 description="Practice with AI"
-                action="Start →"
               />
 
               <QuickAction
                 to="/resume-analyzer"
                 icon={<FaFileAlt />}
-                title="AI Resume Analyzer"
-                description="Check your ATS score"
-                action="Analyze →"
+                title="Resume Analyzer"
+                description="Improve your ATS score"
               />
 
               <QuickAction
                 to="/study-planner"
                 icon={<FaRoute />}
-                title="AI Study Planner"
-                description="Create your personalized study plan"
-                action="Plan →"
+                title="Study Planner"
+                description="Build your roadmap"
               />
 
               <QuickAction
@@ -765,16 +1003,147 @@ function Dashboard() {
                 icon={<FaCode />}
                 title="Coding Practice"
                 description="Improve your DSA"
-                action="Practice →"
               />
 
             </div>
 
-          </div>
+          </section>
 
         </div>
 
       </main>
+
+    </div>
+  );
+}
+
+// =====================================================
+// SECTION HEADING
+// =====================================================
+
+function SectionHeading({ title, description }) {
+  return (
+    <div className="mb-5">
+
+      <h2 className="
+        text-xl
+        font-bold
+        text-[var(--text)]
+      ">
+        {title}
+      </h2>
+
+      <p className="
+        text-sm
+        text-gray-500
+        mt-1
+      ">
+        {description}
+      </p>
+
+    </div>
+  );
+}
+
+// =====================================================
+// OVERVIEW CARD
+// =====================================================
+
+function OverviewCard({
+  icon,
+  label,
+  value,
+  status,
+  description,
+  progress,
+  primary = false,
+}) {
+  return (
+    <div className="
+      bg-white
+      border border-[var(--secondary)]
+      rounded-2xl
+      p-5
+      hover:shadow-md
+      transition
+    ">
+
+      <div className="flex items-center justify-between">
+
+        <div className="
+          w-10 h-10
+          rounded-xl
+          bg-[var(--background)]
+          text-[var(--primary)]
+          flex items-center justify-center
+        ">
+          {icon}
+        </div>
+
+        <span className="
+          text-xs
+          font-semibold
+          text-[var(--primary)]
+        ">
+          {status}
+        </span>
+
+      </div>
+
+      <p className="
+        text-sm
+        text-gray-500
+        mt-5
+      ">
+        {label}
+      </p>
+
+      <h3
+        className={`
+          font-bold
+          mt-1
+          ${
+            primary
+              ? "text-3xl text-[var(--primary)]"
+              : "text-xl text-[var(--text)]"
+          }
+        `}
+      >
+        {value}
+      </h3>
+
+      {progress !== undefined && (
+        <div className="
+          h-1.5
+          bg-[var(--background)]
+          rounded-full
+          mt-4
+          overflow-hidden
+        ">
+          <div
+            className="
+              h-full
+              bg-[var(--primary)]
+              rounded-full
+            "
+            style={{
+              width: `${Math.min(
+                Math.max(progress, 0),
+                100
+              )}%`,
+            }}
+          />
+        </div>
+      )}
+
+      <p className="
+        text-xs
+        text-gray-500
+        mt-3
+        line-clamp-2
+      ">
+        {description}
+      </p>
 
     </div>
   );
@@ -796,24 +1165,52 @@ function ProgressItem({
       ? (current / total) * 100
       : 0;
 
+  const completed = current >= total;
+
   return (
     <div>
 
-      <div className="flex justify-between items-center mb-2">
+      <div className="
+        flex
+        justify-between
+        items-center
+        gap-4
+        mb-2
+      ">
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
 
-          <div className="w-10 h-10 rounded-xl bg-[var(--background)] text-[var(--primary)] flex items-center justify-center">
-            {icon}
+          <div className="
+            w-10 h-10
+            shrink-0
+            rounded-xl
+            bg-[var(--background)]
+            text-[var(--primary)]
+            flex items-center justify-center
+          ">
+            {completed ? (
+              <FaCheck className="text-sm" />
+            ) : (
+              icon
+            )}
           </div>
 
-          <div>
+          <div className="min-w-0">
 
-            <p className="font-semibold text-[var(--text)]">
+            <p className="
+              font-semibold
+              text-[var(--text)]
+              text-sm
+            ">
               {title}
             </p>
 
-            <p className="text-sm text-gray-500">
+            <p className="
+              text-xs
+              text-gray-500
+              mt-0.5
+              truncate
+            ">
               {description}
             </p>
 
@@ -821,55 +1218,38 @@ function ProgressItem({
 
         </div>
 
-        <span className="text-sm font-semibold">
-          {current} / {total}
+        <span className="
+          shrink-0
+          text-xs
+          font-semibold
+          text-gray-500
+        ">
+          {completed ? "Complete" : `${current}/${total}`}
         </span>
 
       </div>
 
-      <div className="w-full bg-[var(--background)] rounded-full h-2">
+      <div className="
+        ml-13
+        h-2
+        bg-[var(--background)]
+        rounded-full
+        overflow-hidden
+      ">
 
         <div
-          className="bg-[var(--primary)] h-2 rounded-full transition-all duration-500"
+          className="
+            h-full
+            bg-[var(--primary)]
+            rounded-full
+            transition-all duration-500
+          "
           style={{
             width: `${percentage}%`,
           }}
         />
 
       </div>
-
-    </div>
-  );
-}
-
-// =====================================================
-// ACTIVITY CARD
-// =====================================================
-
-function ActivityCard({
-  icon,
-  title,
-  value,
-  description,
-}) {
-  return (
-    <div className="bg-white rounded-2xl border border-[var(--secondary)] p-6 shadow-sm hover:shadow-md transition">
-
-      <div className="w-12 h-12 rounded-xl bg-[var(--background)] text-[var(--primary)] flex items-center justify-center text-xl">
-        {icon}
-      </div>
-
-      <h3 className="font-semibold text-gray-500 text-sm mt-5">
-        {title}
-      </h3>
-
-      <p className="text-xl font-bold text-[var(--text)] mt-2">
-        {value}
-      </p>
-
-      <p className="text-sm text-gray-500 mt-2">
-        {description}
-      </p>
 
     </div>
   );
@@ -884,29 +1264,64 @@ function QuickAction({
   icon,
   title,
   description,
-  action,
 }) {
   return (
     <Link
       to={to}
-      className="group bg-white p-6 rounded-2xl border border-[var(--secondary)] shadow-sm hover:shadow-xl hover:-translate-y-1 transition"
+      className="
+        group
+        bg-white
+        border border-[var(--secondary)]
+        rounded-2xl
+        p-5
+        hover:-translate-y-1
+        hover:shadow-md
+        transition-all
+      "
     >
 
-      <div className="w-12 h-12 rounded-xl bg-[var(--background)] flex items-center justify-center text-[var(--primary)] text-xl group-hover:bg-[var(--primary)] group-hover:text-white transition">
+      <div className="
+        w-11 h-11
+        rounded-xl
+        bg-[var(--background)]
+        text-[var(--primary)]
+        flex items-center justify-center
+        text-lg
+        group-hover:bg-[var(--primary)]
+        group-hover:text-white
+        transition
+      ">
         {icon}
       </div>
 
-      <h3 className="font-bold text-[var(--text)] mt-5">
+      <h3 className="
+        font-semibold
+        text-[var(--text)]
+        mt-4
+      ">
         {title}
       </h3>
 
-      <p className="text-sm text-gray-500 mt-2">
-        {description}
-      </p>
+      <div className="
+        flex items-center justify-between
+        mt-2
+      ">
 
-      <p className="text-sm font-semibold text-[var(--primary)] mt-4">
-        {action}
-      </p>
+        <p className="
+          text-sm
+          text-gray-500
+        ">
+          {description}
+        </p>
+
+        <FaArrowRight className="
+          text-xs
+          text-[var(--primary)]
+          group-hover:translate-x-1
+          transition
+        " />
+
+      </div>
 
     </Link>
   );

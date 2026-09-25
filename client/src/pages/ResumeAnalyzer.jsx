@@ -13,6 +13,12 @@ import {
   FaPen,
   FaRocket,
   FaArrowLeft,
+  FaCheckCircle,
+  FaSyncAlt,
+  FaFileAlt,
+  FaStar,
+  FaTimes,
+  FaCloudUploadAlt,
 } from "react-icons/fa";
 
 function ResumeAnalyzer() {
@@ -25,6 +31,10 @@ function ResumeAnalyzer() {
   const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef(null);
+
+  // ==================================================
+  // FILE VALIDATION
+  // ==================================================
 
   const validateFile = (selectedFile) => {
     if (!selectedFile) return false;
@@ -41,6 +51,10 @@ function ResumeAnalyzer() {
 
     return true;
   };
+
+  // ==================================================
+  // HANDLE FILE
+  // ==================================================
 
   const handleFile = (selectedFile) => {
     if (!validateFile(selectedFile)) {
@@ -59,7 +73,14 @@ function ResumeAnalyzer() {
     if (selectedFile) {
       handleFile(selectedFile);
     }
+
+    // Allow selecting the same file again
+    e.target.value = "";
   };
+
+  // ==================================================
+  // DRAG & DROP
+  // ==================================================
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -77,9 +98,30 @@ function ResumeAnalyzer() {
     setIsDragging(true);
   };
 
-  const handleDragLeave = () => {
+  const handleDragLeave = (e) => {
+    e.preventDefault();
     setIsDragging(false);
   };
+
+  // ==================================================
+  // REMOVE FILE
+  // ==================================================
+
+  const removeFile = (e) => {
+    e.stopPropagation();
+
+    setFile(null);
+    setMessage("");
+    setAnalysis(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // ==================================================
+  // ANALYZE RESUME
+  // ==================================================
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -104,126 +146,362 @@ function ResumeAnalyzer() {
       setMessage("");
       setAnalysis(null);
 
-      const res = await api.post(
-        "/resume/analyze",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await api.post("/resume/analyze", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       setAnalysis(res.data.analysis);
       setMessage("Resume analyzed successfully.");
     } catch (error) {
       setMessage(
-        error.response?.data?.message ||
-          "Failed to analyze resume."
+        error.response?.data?.message || "Failed to analyze resume."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-white px-4 py-10">
-      <div className="max-w-6xl mx-auto">
+  // ==================================================
+  // ANALYZE ANOTHER
+  // ==================================================
 
-        {/* NORMAL BACK BUTTON */}
+  const analyzeAnother = () => {
+    setFile(null);
+    setAnalysis(null);
+    setMessage("");
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  // ==================================================
+  // SCORE
+  // ==================================================
+
+  const score = Math.min(
+    Math.max(Number(analysis?.atsScore) || 0, 0),
+    100
+  );
+
+  const getScoreLabel = (value) => {
+    if (value >= 80) return "Good Score";
+    if (value >= 60) return "Needs Improvement";
+    return "Needs Attention";
+  };
+
+  const getScoreColor = (value) => {
+    if (value >= 80) return "#A53860";
+    if (value >= 60) return "#C06A85";
+    return "#B42318";
+  };
+
+  // ==================================================
+  // UI
+  // ==================================================
+
+  return (
+    <div className="min-h-screen bg-[#FFFBFC] text-gray-900">
+
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 py-7 md:py-9">
+
+        {/* ==================================================
+            BACK
+        ================================================== */}
+
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-500 hover:text-[#A53860] transition mb-6"
+          className="group flex items-center gap-2 text-[#670D2F] font-medium hover:text-[#A53860] transition mb-7"
         >
-          <FaArrowLeft />
+          <FaArrowLeft className="group-hover:-translate-x-1 transition-transform" />
+
           <span>Back</span>
         </button>
 
-        {/* AI Badge */}
-        <div className="flex justify-center mb-5">
-          <div className="inline-flex items-center gap-2 bg-white border border-[#F1D5E0] text-[#A53860] px-4 py-2 rounded-full shadow-sm text-sm font-semibold">
-            ✨ AI Powered
-          </div>
-        </div>
+        {/* ==================================================
+            HERO
+        ================================================== */}
 
-        {/* Hero */}
-        <div className="text-center mb-10">
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900">
-            <span className="text-[#A53860]">
-              AI
-            </span>{" "}
-            Resume Analyzer
-          </h1>
+        <section className="grid lg:grid-cols-[1.25fr_0.75fr] gap-8 lg:gap-12 items-center mb-8">
 
-          <p className="text-gray-600 text-lg mt-4 max-w-2xl mx-auto">
-            Upload your resume and get AI-powered feedback to stand out.
-          </p>
-        </div>
+          {/* LEFT */}
+          <div>
 
-        {/* Upload Card */}
-        <div className="bg-white rounded-3xl shadow-xl border border-[#F1D5E0] p-6 md:p-10">
+            {/* AI BADGE */}
 
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-[#FFF7FA] text-[#A53860] flex items-center justify-center text-2xl">
-              <FaUpload />
+            <div className="inline-flex items-center gap-2 bg-[#FCE5ED] text-[#670D2F] border border-[#F1D5E0] px-4 py-2 rounded-full text-sm font-semibold mb-5">
+
+              <span className="text-[#A53860]">
+                ✦
+              </span>
+
+              AI Powered
+
             </div>
 
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                Upload Resume
-              </h2>
+            {/* HEADING */}
 
-              <p className="text-gray-500">
-                Upload your resume in PDF format for best results.
-              </p>
+            <h1 className="text-4xl sm:text-5xl lg:text-[60px] font-extrabold tracking-tight leading-[1.05]">
+
+              <span className="text-[#A53860]">
+                AI
+              </span>{" "}
+
+              Resume Analyzer
+
+            </h1>
+
+            {/* DESCRIPTION */}
+
+            <p className="text-gray-600 text-lg md:text-xl mt-5 max-w-2xl leading-relaxed">
+
+              Get detailed feedback on your resume and make it stand out.
+              Upload your resume and let AI help you improve it.
+
+            </p>
+
+            {/* BENEFITS */}
+
+            <div className="grid sm:grid-cols-3 gap-5 mt-7">
+
+              <HeroBenefit
+                icon={<FaBullseye />}
+                title="ATS Optimization"
+                description="Improve your ATS score"
+              />
+
+              <HeroBenefit
+                icon={<FaChartLine />}
+                title="Skill Gap Analysis"
+                description="Find missing skills"
+              />
+
+              <HeroBenefit
+                icon={<FaLightbulb />}
+                title="Actionable Suggestions"
+                description="Get personalized tips"
+              />
+
             </div>
+
           </div>
+
+          {/* ==================================================
+              HERO ILLUSTRATION
+          ================================================== */}
+
+          <div className="hidden lg:flex justify-center">
+
+            <div className="relative w-[300px] h-[310px]">
+
+              {/* Glow */}
+
+              <div className="absolute inset-8 bg-[#FCE5ED] rounded-full blur-3xl opacity-70" />
+
+              {/* Back paper */}
+
+              <div
+                className="
+                  absolute
+                  top-8
+                  left-4
+                  w-52
+                  h-64
+                  bg-[#F7DDE6]
+                  rounded-2xl
+                  rotate-[-8deg]
+                  shadow-sm
+                "
+              />
+
+              {/* Main paper */}
+
+              <div
+                className="
+                  absolute
+                  top-1
+                  left-12
+                  w-56
+                  h-72
+                  bg-white
+                  rounded-2xl
+                  border
+                  border-[#F1D5E0]
+                  shadow-xl
+                  rotate-[5deg]
+                  p-6
+                "
+              >
+
+                {/* Profile */}
+
+                <div className="flex items-center gap-3 mb-6">
+
+                  <div className="w-10 h-10 rounded-full bg-[#FCE5ED] flex items-center justify-center text-[#A53860]">
+
+                    <FaFileAlt />
+
+                  </div>
+
+                  <div className="space-y-2">
+
+                    <div className="w-24 h-2 bg-[#F1D5E0] rounded" />
+
+                    <div className="w-16 h-2 bg-[#F7E9EE] rounded" />
+
+                  </div>
+
+                </div>
+
+                {/* Lines */}
+
+                <div className="space-y-4">
+
+                  <div className="h-2 bg-[#F7E9EE] rounded w-full" />
+
+                  <div className="h-2 bg-[#F7E9EE] rounded w-5/6" />
+
+                  <div className="h-2 bg-[#F7E9EE] rounded w-4/6" />
+
+                  <div className="h-2 bg-[#F7E9EE] rounded w-full" />
+
+                  <div className="h-2 bg-[#F7E9EE] rounded w-3/4" />
+
+                </div>
+
+                {/* Tags */}
+
+                <div className="mt-8 flex gap-2 flex-wrap">
+
+                  <div className="w-12 h-6 bg-[#FCE5ED] rounded-full" />
+
+                  <div className="w-16 h-6 bg-[#FCE5ED] rounded-full" />
+
+                  <div className="w-10 h-6 bg-[#FCE5ED] rounded-full" />
+
+                </div>
+
+              </div>
+
+              {/* SCORE CARD */}
+
+              <div
+                className="
+                  absolute
+                  bottom-5
+                  right-0
+                  bg-white
+                  border
+                  border-[#F1D5E0]
+                  rounded-2xl
+                  shadow-lg
+                  px-5
+                  py-4
+                "
+              >
+
+                <div className="flex items-center gap-3">
+
+                  <div className="w-10 h-10 rounded-full bg-[#FCE5ED] text-[#A53860] flex items-center justify-center">
+
+                    <FaChartLine />
+
+                  </div>
+
+                  <div>
+
+                    <p className="text-xs text-gray-500">
+                      Resume Score
+                    </p>
+
+                    <p className="font-bold text-[#670D2F]">
+                      Stand Out
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* ==================================================
+            UPLOAD CARD
+        ================================================== */}
+
+        <section className="bg-white border border-[#F1D5E0] rounded-3xl shadow-sm p-4 sm:p-6 mb-7">
 
           <form onSubmit={handleSubmit}>
 
-            {/* Upload Area */}
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-10 md:p-14 text-center cursor-pointer transition ${
-                isDragging
-                  ? "border-[#A53860] bg-[#FFF7FA]"
-                  : "border-[#F1D5E0] bg-white hover:bg-[#FFF7FA]"
-              }`}
+              onClick={() => {
+                if (!file) {
+                  fileInputRef.current?.click();
+                }
+              }}
+              className={`
+                border-2
+                border-dashed
+                rounded-2xl
+                transition-all
+                duration-300
+                ${
+                  isDragging
+                    ? "border-[#A53860] bg-[#FFF7FA] scale-[1.005]"
+                    : "border-[#EFB8CA] bg-[#FFFBFC]"
+                }
+                ${
+                  !file
+                    ? "cursor-pointer hover:bg-[#FFF7FA] hover:border-[#A53860]"
+                    : ""
+                }
+              `}
             >
+
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf"
+                accept=".pdf,application/pdf"
                 onChange={handleFileChange}
                 className="hidden"
               />
 
-              <div className="w-16 h-16 mx-auto rounded-full bg-[#FCE5ED] text-[#A53860] flex items-center justify-center text-2xl mb-4">
-                <FaUpload />
-              </div>
+              {/* ==================================================
+                  NO FILE
+              ================================================== */}
 
-              {file ? (
-                <>
-                  <div className="flex items-center justify-center gap-2 text-[#670D2F] font-semibold text-lg">
+              {!file ? (
+                <div className="min-h-[260px] flex flex-col items-center justify-center text-center px-5 py-10">
+
+                  {/* PDF */}
+
+                  <div className="w-20 h-20 bg-[#FCE5ED] rounded-2xl flex items-center justify-center text-[#A53860] text-3xl mb-5">
+
                     <FaFilePdf />
-                    {file.name}
+
                   </div>
 
-                  <p className="text-gray-500 mt-2">
-                    Click to choose a different file
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-xl font-semibold text-gray-800">
-                    Drag & drop your resume here
-                  </p>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Upload Your Resume
+                  </h2>
 
-                  <p className="text-gray-400 my-2">
-                    or
+                  <p className="text-gray-500 mt-2">
+                    Drag & drop your PDF file here, or click to browse
                   </p>
 
                   <button
@@ -232,216 +510,397 @@ function ResumeAnalyzer() {
                       e.stopPropagation();
                       fileInputRef.current?.click();
                     }}
-                    className="border border-[#EF88AD] text-[#A53860] px-6 py-2.5 rounded-xl font-semibold hover:bg-[#FFF7FA] transition"
+                    className="
+                      mt-6
+                      bg-[#670D2F]
+                      hover:bg-[#3A0519]
+                      text-white
+                      px-8
+                      py-3
+                      rounded-xl
+                      font-semibold
+                      transition
+                      flex
+                      items-center
+                      gap-2
+                      shadow-md
+                    "
                   >
+
+                    <FaUpload />
+
                     Choose File
+
                   </button>
-                </>
+
+                  <p className="text-sm text-gray-400 mt-4">
+                    Only PDF files are allowed · Max 5 MB
+                  </p>
+
+                </div>
+              ) : (
+
+                /* ==================================================
+                   FILE SELECTED
+                ================================================== */
+
+                <div className="p-6 sm:p-8">
+
+                  <div className="max-w-3xl mx-auto">
+
+                    <div className="flex flex-col sm:flex-row items-center gap-5 bg-white border border-[#F1D5E0] rounded-2xl p-5 shadow-sm">
+
+                      {/* PDF ICON */}
+
+                      <div className="w-16 h-16 shrink-0 rounded-2xl bg-[#FCE5ED] text-[#A53860] flex items-center justify-center text-2xl">
+
+                        <FaFilePdf />
+
+                      </div>
+
+                      {/* FILE INFO */}
+
+                      <div className="flex-1 text-center sm:text-left min-w-0">
+
+                        <p className="font-bold text-[#670D2F] text-lg truncate">
+
+                          {file.name}
+
+                        </p>
+
+                        <p className="text-sm text-gray-500 mt-1">
+
+                          PDF Document ·{" "}
+                          {(file.size / (1024 * 1024)).toFixed(2)} MB
+
+                        </p>
+
+                        <div className="flex items-center justify-center sm:justify-start gap-2 mt-2 text-green-600 text-sm font-medium">
+
+                          <FaCheckCircle />
+
+                          Ready to analyze
+
+                        </div>
+
+                      </div>
+
+                      {/* CHANGE BUTTON */}
+
+                      <div className="flex items-center gap-2 shrink-0">
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            fileInputRef.current?.click();
+                          }}
+                          className="
+                            px-4
+                            py-2
+                            rounded-lg
+                            border
+                            border-[#EFB8CA]
+                            text-[#A53860]
+                            hover:bg-[#FFF7FA]
+                            font-semibold
+                            text-sm
+                            transition
+                          "
+                        >
+                          Change
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={removeFile}
+                          className="
+                            w-9
+                            h-9
+                            rounded-lg
+                            border
+                            border-gray-200
+                            text-gray-400
+                            hover:text-red-500
+                            hover:bg-red-50
+                            flex
+                            items-center
+                            justify-center
+                            transition
+                          "
+                          aria-label="Remove resume"
+                        >
+                          <FaTimes />
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                    <p className="text-center text-sm text-gray-400 mt-4">
+
+                      Click "Change" if you want to select another resume.
+
+                    </p>
+
+                  </div>
+
+                </div>
+
               )}
+
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-gray-500 mt-3">
-              <FaFilePdf />
-              Supports PDF files up to 5MB
-            </div>
+            {/* ==================================================
+                MESSAGE
+            ================================================== */}
 
             {message && (
-              <p
-                className={`text-center mt-4 font-medium ${
-                  message.includes("successfully")
-                    ? "text-green-600"
-                    : "text-red-500"
-                }`}
+              <div
+                className={`
+                  mt-4
+                  text-center
+                  text-sm
+                  font-medium
+                  ${
+                    message.includes("successfully")
+                      ? "text-green-600"
+                      : "text-red-500"
+                  }
+                `}
               >
                 {message}
-              </p>
+              </div>
             )}
+
+            {/* ==================================================
+                ANALYZE
+            ================================================== */}
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full mt-6 bg-[#670D2F] hover:bg-[#3A0519] text-white font-bold py-4 rounded-2xl text-lg shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || !file}
+              className="
+                w-full
+                mt-5
+                bg-[#670D2F]
+                hover:bg-[#3A0519]
+                text-white
+                font-bold
+                py-4
+                rounded-xl
+                text-lg
+                shadow-lg
+                transition
+                disabled:opacity-50
+                disabled:cursor-not-allowed
+                flex
+                items-center
+                justify-center
+                gap-3
+              "
             >
-              {loading
-                ? "Analyzing Resume..."
-                : "Analyze Resume"}
+
+              {loading ? (
+                <>
+                  <FaSyncAlt className="animate-spin" />
+                  Analyzing Resume...
+                </>
+              ) : (
+                <>
+                  ✦
+                  Analyze My Resume
+                </>
+              )}
+
             </button>
 
+            {/* SECURITY */}
+
             <p className="text-center text-sm text-gray-400 mt-4 flex items-center justify-center gap-2">
+
               <FaLock />
+
               Your resume is processed securely for analysis.
+
             </p>
 
           </form>
-        </div>
 
-        {/* What You'll Get */}
-        <div className="mt-14">
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <div className="h-px bg-[#F1D5E0] w-12" />
+        </section>
 
-            <h2 className="text-2xl font-bold text-gray-900">
-              What you'll get
-            </h2>
+        {/* ==================================================
+            WHAT YOU GET
+        ================================================== */}
 
-            <div className="h-px bg-[#F1D5E0] w-12" />
+        <section className="bg-white border border-[#F1D5E0] rounded-3xl shadow-sm p-6 sm:p-8 mb-7">
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-7">
+
+            <div className="flex items-center gap-3">
+
+              <div className="w-11 h-11 rounded-xl bg-[#FCE5ED] text-[#A53860] flex items-center justify-center">
+
+                <FaFileAlt />
+
+              </div>
+
+              <h2 className="text-2xl sm:text-3xl font-bold">
+                What You'll Get
+              </h2>
+
+            </div>
+
+            <p className="text-gray-500">
+              A complete analysis of your resume
+            </p>
+
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
             <FeatureCard
               icon={<FaBullseye />}
               title="ATS Score"
-              description="Get your resume score out of 100"
-              iconBg="bg-[#FFF7FA]"
-              iconColor="text-[#A53860]"
+              description="See how well your resume performs with ATS systems"
             />
 
             <FeatureCard
               icon={<FaChartLine />}
               title="Skills Analysis"
-              description="Identify your top skills and strengths"
-              iconBg="bg-green-50"
-              iconColor="text-[#A53860]"
+              description="Identify your key skills and missing keywords"
             />
 
             <FeatureCard
               icon={<FaLightbulb />}
-              title="Strengths"
-              description="Know what makes your resume stand out"
-              iconBg="bg-orange-50"
-              iconColor="text-[#A53860]"
+              title="AI Suggestions"
+              description="Get actionable tips to improve your resume"
             />
 
             <FeatureCard
-              icon={<FaExclamationTriangle />}
-              title="Missing Keywords"
-              description="Find important keywords you're missing"
-              iconBg="bg-red-50"
-              iconColor="text-red-500"
-            />
-
-            <FeatureCard
-              icon={<FaPen />}
-              title="Suggestions"
-              description="Get AI-powered suggestions to improve your resume"
-              iconBg="bg-blue-50"
-              iconColor="text-blue-600"
+              icon={<FaRocket />}
+              title="Better Opportunities"
+              description="Increase your chances of getting interviews"
             />
 
           </div>
-        </div>
 
-        {/* Tip */}
-        <div className="mt-6 bg-white border border-[#F1D5E0] rounded-2xl shadow-sm p-5 flex items-center gap-4">
+        </section>
 
-          <div className="w-12 h-12 shrink-0 rounded-full bg-[#FCE5ED] text-[#A53860] flex items-center justify-center">
-            ✨
+        {/* ==================================================
+            TIP
+        ================================================== */}
+
+        {!analysis && (
+
+          <div className="bg-white border border-[#F1D5E0] rounded-2xl p-5 flex items-center gap-4 shadow-sm mb-10">
+
+            <div className="w-11 h-11 shrink-0 rounded-full bg-[#FCE5ED] text-[#A53860] flex items-center justify-center">
+
+              <FaLightbulb />
+
+            </div>
+
+            <p className="text-gray-600 leading-relaxed">
+
+              <span className="font-bold text-gray-900">
+                Tip:
+              </span>{" "}
+
+              For better results, make sure your resume includes relevant
+              skills, experience, and achievements.
+
+            </p>
+
           </div>
 
-          <p className="text-gray-600 leading-relaxed">
-            <span className="font-bold text-gray-900">
-              Tip:
-            </span>{" "}
-            For better results, make sure your resume includes relevant
-            skills, experience, and achievements.
-          </p>
+        )}
 
-          <FaRocket className="ml-auto text-[#A53860] text-3xl hidden sm:block" />
-        </div>
+        {/* ==================================================
+            ANALYSIS
+        ================================================== */}
 
-        {/* Analysis Results */}
         {analysis && (
-          <div className="mt-14">
 
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900">
-                Resume Analysis
-              </h2>
+          <AnalysisResults
+            analysis={analysis}
+            score={score}
+            getScoreLabel={getScoreLabel}
+            getScoreColor={getScoreColor}
+            onAnalyzeAnother={analyzeAnother}
+          />
 
-              <p className="text-gray-500 mt-2">
-                Here is the AI-generated analysis of your resume.
-              </p>
-            </div>
-
-            <div className="space-y-6">
-
-              {/* ATS Score */}
-              <div className="bg-white rounded-3xl shadow-lg border border-[#F1D5E0] p-8 text-center">
-
-                <h3 className="text-2xl font-bold text-gray-900">
-                  ATS Score
-                </h3>
-
-                <div className="text-6xl font-bold text-[#A53860] mt-4">
-                  {analysis.atsScore}/100
-                </div>
-
-                <div className="w-full max-w-xl mx-auto bg-gray-100 rounded-full h-3 mt-6">
-                  <div
-                    className="bg-[#A53860] h-3 rounded-full transition-all"
-                    style={{
-                      width: `${Math.min(
-                        Math.max(
-                          Number(analysis.atsScore) || 0,
-                          0
-                        ),
-                        100
-                      )}%`,
-                    }}
-                  />
-                </div>
-
-              </div>
-
-              <ResultSection
-                title="Skills Found"
-                items={analysis.skillsFound}
-              />
-
-              <ResultSection
-                title="Strengths"
-                items={analysis.strengths}
-              />
-
-              <ResultSection
-                title="Missing Keywords"
-                items={analysis.missingKeywords}
-              />
-
-              <ResultSection
-                title="Areas for Improvement"
-                items={analysis.improvements}
-              />
-
-              <ResultSection
-                title="Suggestions"
-                items={analysis.suggestions}
-              />
-
-            </div>
-          </div>
         )}
 
       </div>
+
     </div>
   );
 }
+
+// ==========================================================
+// HERO BENEFIT
+// ==========================================================
+
+function HeroBenefit({
+  icon,
+  title,
+  description,
+}) {
+  return (
+    <div className="flex items-start gap-3">
+
+      <div className="w-10 h-10 shrink-0 rounded-full bg-[#FCE5ED] text-[#A53860] flex items-center justify-center">
+
+        {icon}
+
+      </div>
+
+      <div>
+
+        <h3 className="font-bold text-gray-900 text-sm">
+          {title}
+        </h3>
+
+        <p className="text-xs text-gray-500 mt-1">
+          {description}
+        </p>
+
+      </div>
+
+    </div>
+  );
+}
+
+// ==========================================================
+// FEATURE CARD
+// ==========================================================
 
 function FeatureCard({
   icon,
   title,
   description,
-  iconBg,
-  iconColor,
 }) {
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition">
+    <div
+      className="
+        group
+        border
+        border-[#F1D5E0]
+        rounded-2xl
+        p-5
+        bg-[#FFFBFC]
+        hover:bg-[#FFF7FA]
+        hover:-translate-y-1
+        transition-all
+        duration-300
+      "
+    >
 
-      <div
-        className={`w-12 h-12 rounded-full ${iconBg} ${iconColor} flex items-center justify-center text-lg`}
-      >
+      <div className="w-12 h-12 rounded-xl bg-[#FCE5ED] text-[#A53860] flex items-center justify-center text-lg group-hover:scale-105 transition">
+
         {icon}
+
       </div>
 
       <h3 className="font-bold text-gray-900 mt-4">
@@ -456,34 +915,480 @@ function FeatureCard({
   );
 }
 
-function ResultSection({
+// ==========================================================
+// ANALYSIS RESULTS
+// ==========================================================
+
+function AnalysisResults({
+  analysis,
+  score,
+  getScoreLabel,
+  getScoreColor,
+  onAnalyzeAnother,
+}) {
+  return (
+    <section className="mb-10">
+
+      {/* HEADER */}
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+
+        <div className="flex items-center gap-3">
+
+          <div className="w-12 h-12 rounded-xl bg-[#FCE5ED] text-[#A53860] flex items-center justify-center text-lg">
+
+            <FaFileAlt />
+
+          </div>
+
+          <div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+
+              <h2 className="text-2xl sm:text-3xl font-bold">
+                Analysis Results
+              </h2>
+
+              <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+
+                <FaCheckCircle />
+
+                Completed
+
+              </span>
+
+            </div>
+
+            <p className="text-gray-500 mt-1">
+              Here's the AI-generated analysis of your resume.
+            </p>
+
+          </div>
+
+        </div>
+
+        <button
+          onClick={onAnalyzeAnother}
+          className="
+            border
+            border-[#A53860]
+            text-[#A53860]
+            hover:bg-[#FFF7FA]
+            px-5
+            py-2.5
+            rounded-xl
+            font-semibold
+            transition
+            flex
+            items-center
+            justify-center
+            gap-2
+          "
+        >
+
+          <FaSyncAlt />
+
+          Analyze Another Resume
+
+        </button>
+
+      </div>
+
+      {/* ==================================================
+          ATS + OVERVIEW
+      ================================================== */}
+
+      <div className="grid lg:grid-cols-[0.75fr_1.25fr] gap-5">
+
+        {/* ATS SCORE */}
+
+        <div className="bg-white border border-[#F1D5E0] rounded-3xl p-7 shadow-sm flex flex-col items-center justify-center">
+
+          <h3 className="text-xl font-bold mb-6">
+            ATS Score
+          </h3>
+
+          <ScoreCircle
+            score={score}
+            color={getScoreColor(score)}
+          />
+
+          <div
+            className="mt-5 px-4 py-2 rounded-full text-sm font-semibold"
+            style={{
+              backgroundColor:
+                score >= 80
+                  ? "#E8F7EE"
+                  : "#FFF4E5",
+              color:
+                score >= 80
+                  ? "#16803C"
+                  : "#9A6700",
+            }}
+          >
+
+            <span className="inline-flex items-center gap-2">
+
+              <span className="w-2 h-2 rounded-full bg-current" />
+
+              {getScoreLabel(score)}
+
+            </span>
+
+          </div>
+
+        </div>
+
+        {/* OVERVIEW */}
+
+        <div className="bg-white border border-[#F1D5E0] rounded-3xl p-7 shadow-sm">
+
+          <div className="flex items-center gap-3 mb-5">
+
+            <div className="w-11 h-11 rounded-xl bg-[#FCE5ED] text-[#A53860] flex items-center justify-center">
+
+              <FaFileAlt />
+
+            </div>
+
+            <h3 className="text-xl font-bold">
+              Resume Overview
+            </h3>
+
+          </div>
+
+          <p className="text-gray-600 leading-7">
+
+            Your resume has been analyzed based on its skills,
+            strengths, missing keywords, and improvement areas.
+            Review the recommendations below to make your resume
+            stronger and more ATS-friendly.
+
+          </p>
+
+          <div className="grid sm:grid-cols-3 gap-3 mt-6">
+
+            <MiniStat
+              value={analysis.skillsFound?.length || 0}
+              label="Skills Found"
+            />
+
+            <MiniStat
+              value={analysis.missingKeywords?.length || 0}
+              label="Missing Keywords"
+            />
+
+            <MiniStat
+              value={analysis.suggestions?.length || 0}
+              label="Suggestions"
+            />
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* ==================================================
+          SKILLS + KEYWORDS
+      ================================================== */}
+
+      <div className="grid md:grid-cols-2 gap-5 mt-5">
+
+        <TagSection
+          title="Skills Found"
+          icon={<FaCheckCircle />}
+          items={analysis.skillsFound}
+        />
+
+        <TagSection
+          title="Missing Keywords"
+          icon={<FaExclamationTriangle />}
+          items={analysis.missingKeywords}
+        />
+
+      </div>
+
+      {/* ==================================================
+          STRENGTHS + IMPROVEMENTS
+      ================================================== */}
+
+      <div className="grid md:grid-cols-2 gap-5 mt-5">
+
+        <ListSection
+          title="Strengths"
+          icon={<FaStar />}
+          items={analysis.strengths}
+        />
+
+        <ListSection
+          title="Areas for Improvement"
+          icon={<FaPen />}
+          items={analysis.improvements}
+        />
+
+      </div>
+
+      {/* ==================================================
+          AI RECOMMENDATIONS
+      ================================================== */}
+
+      <div className="bg-white border border-[#F1D5E0] rounded-3xl p-6 sm:p-8 shadow-sm mt-5">
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+
+          <div className="flex items-center gap-3">
+
+            <div className="w-11 h-11 rounded-xl bg-[#FCE5ED] text-[#A53860] flex items-center justify-center">
+
+              <FaLightbulb />
+
+            </div>
+
+            <h3 className="text-2xl font-bold">
+              AI Recommendations
+            </h3>
+
+          </div>
+
+          <p className="text-sm text-gray-500">
+            Follow these suggestions to improve your resume
+          </p>
+
+        </div>
+
+        {analysis.suggestions?.length > 0 ? (
+
+          <div className="space-y-4">
+
+            {analysis.suggestions.map((item, index) => (
+
+              <div
+                key={index}
+                className="flex items-start gap-4"
+              >
+
+                <div className="w-8 h-8 shrink-0 rounded-full bg-[#FCE5ED] text-[#A53860] flex items-center justify-center font-bold text-sm">
+
+                  {index + 1}
+
+                </div>
+
+                <p className="text-gray-600 leading-7 pt-1">
+                  {item}
+                </p>
+
+              </div>
+
+            ))}
+
+          </div>
+
+        ) : (
+
+          <p className="text-gray-500">
+            No recommendations available.
+          </p>
+
+        )}
+
+      </div>
+
+    </section>
+  );
+}
+
+// ==========================================================
+// SCORE CIRCLE
+// ==========================================================
+
+function ScoreCircle({
+  score,
+  color,
+}) {
+  return (
+    <div
+      className="w-48 h-48 rounded-full flex items-center justify-center"
+      style={{
+        background: `conic-gradient(
+          ${color} ${score * 3.6}deg,
+          #FCE5ED ${score * 3.6}deg
+        )`,
+      }}
+    >
+
+      <div className="w-36 h-36 rounded-full bg-white flex flex-col items-center justify-center">
+
+        <span className="text-5xl font-extrabold text-gray-900">
+          {score}
+        </span>
+
+        <span className="text-gray-500 text-sm">
+          / 100
+        </span>
+
+      </div>
+
+    </div>
+  );
+}
+
+// ==========================================================
+// MINI STAT
+// ==========================================================
+
+function MiniStat({
+  value,
+  label,
+}) {
+  return (
+    <div className="bg-[#FFFBFC] border border-[#F1D5E0] rounded-xl p-4">
+
+      <p className="text-2xl font-bold text-[#670D2F]">
+        {value}
+      </p>
+
+      <p className="text-xs text-gray-500 mt-1">
+        {label}
+      </p>
+
+    </div>
+  );
+}
+
+// ==========================================================
+// TAG SECTION
+// ==========================================================
+
+function TagSection({
   title,
+  icon,
   items,
 }) {
   return (
-    <div className="bg-white border border-[#F1D5E0] rounded-3xl shadow-lg p-6 md:p-8">
+    <div className="bg-white border border-[#F1D5E0] rounded-3xl p-6 shadow-sm">
 
-      <h3 className="text-2xl font-bold text-gray-900 mb-5">
-        {title}
-      </h3>
+      <div className="flex items-center gap-3 mb-5">
+
+        <div className="w-10 h-10 rounded-xl bg-[#FCE5ED] text-[#A53860] flex items-center justify-center">
+
+          {icon}
+
+        </div>
+
+        <h3 className="text-xl font-bold">
+          {title}
+        </h3>
+
+      </div>
 
       {items && items.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+        <div className="flex flex-wrap gap-2">
 
           {items.map((item, index) => (
-            <div
+
+            <span
               key={index}
-              className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-gray-700"
+              className="
+                px-3
+                py-2
+                bg-[#FFF0F5]
+                border
+                border-[#F1D5E0]
+                text-[#670D2F]
+                rounded-full
+                text-sm
+                font-medium
+              "
             >
               {item}
-            </div>
+            </span>
+
           ))}
 
         </div>
+
       ) : (
-        <p className="text-gray-500">
+
+        <p className="text-gray-500 text-sm">
           No data available.
         </p>
+
+      )}
+
+    </div>
+  );
+}
+
+// ==========================================================
+// LIST SECTION
+// ==========================================================
+
+function ListSection({
+  title,
+  icon,
+  items,
+}) {
+  return (
+    <div className="bg-white border border-[#F1D5E0] rounded-3xl p-6 shadow-sm">
+
+      <div className="flex items-center gap-3 mb-5">
+
+        <div className="w-10 h-10 rounded-xl bg-[#FCE5ED] text-[#A53860] flex items-center justify-center">
+
+          {icon}
+
+        </div>
+
+        <h3 className="text-xl font-bold">
+          {title}
+        </h3>
+
+      </div>
+
+      {items && items.length > 0 ? (
+
+        <div className="space-y-3">
+
+          {items.map((item, index) => (
+
+            <div
+              key={index}
+              className="
+                flex
+                items-start
+                gap-3
+                bg-[#FFFBFC]
+                border
+                border-[#F1D5E0]
+                rounded-xl
+                p-4
+              "
+            >
+
+              <span className="w-6 h-6 shrink-0 rounded-full bg-[#FCE5ED] text-[#A53860] flex items-center justify-center text-xs font-bold">
+
+                {index + 1}
+
+              </span>
+
+              <p className="text-gray-600 text-sm leading-6">
+                {item}
+              </p>
+
+            </div>
+
+          ))}
+
+        </div>
+
+      ) : (
+
+        <p className="text-gray-500 text-sm">
+          No data available.
+        </p>
+
       )}
 
     </div>
