@@ -780,383 +780,193 @@ function MockInterview() {
   // SETUP SCREEN
   // ============================================================
 
+  const questionFormats =
+    interviewType === "Coding"
+      ? ["Coding"]
+      : interviewType === "Behavioral" || interviewType === "System Design"
+      ? ["Descriptive"]
+      : ["Descriptive", "MCQ"];
+
+  const applyPreset = (preset) => {
+    setRole(preset.role);
+    setInterviewType(preset.type);
+    setQuestionType(preset.format);
+    setDifficulty(preset.difficulty || "Medium");
+    setExperienceLevel("Fresher");
+    setQuestionCount(preset.count || 10);
+    setFocusAreas(preset.focus);
+    setError("");
+  };
+
   return (
-    <div className="min-h-screen bg-[#FFFBFC] px-4 py-8 md:py-10">
-      <div className="max-w-6xl mx-auto">
-
-        {/* HEADER */}
-        <div className="flex items-center justify-between mb-10">
-
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 text-gray-500 hover:text-[#A53860] transition"
-          >
-            <FaArrowLeft />
-            Back
+    <div className="min-h-screen bg-[#FFFBFC] px-4 py-7 md:px-6 md:py-10">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-gray-500 hover:text-[#A53860] transition font-medium">
+            <FaArrowLeft /> Back
           </button>
-
-          <div className="inline-flex items-center gap-2 bg-white border border-[#F1D5E0] text-[#670D2F] px-4 py-2 rounded-full shadow-sm font-semibold text-sm">
-            <FaRobot />
-            AI Powered
-          </div>
-
+          <span className="inline-flex items-center gap-2 bg-white border border-[#F1D5E0] text-[#670D2F] px-4 py-2 rounded-full shadow-sm font-semibold text-sm">
+            <FaRobot /> AI Powered
+          </span>
         </div>
 
-        {/* HERO */}
-        <div className="text-center mb-10">
-
-          <p className="text-sm font-semibold tracking-[0.2em] uppercase text-[#A53860] mb-3">
-            Practice & Improve
-          </p>
-
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
-            <span className="text-[#A53860]">AI</span>{" "}
-            Mock Interview
-          </h1>
-
-          <p className="text-gray-600 text-base md:text-lg mt-4 max-w-2xl mx-auto">
-            Customize your interview and practice exactly
-            what you need.
-          </p>
-
-        </div>
-
-        {/* MAIN SETUP */}
-        <div className="bg-white border border-[#F1D5E0] rounded-3xl shadow-sm overflow-hidden">
-
-          {/* SECTION HEADER */}
-          <div className="p-6 md:p-9 border-b border-[#FCE5ED]">
-
-            <div className="flex items-start gap-4">
-
-              <div className="w-12 h-12 rounded-xl bg-[#FFF7FA] text-[#670D2F] flex items-center justify-center text-xl shrink-0">
-                <FaBriefcase />
-              </div>
-
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Configure Your Interview
-                </h2>
-
-                <p className="text-gray-500 text-sm mt-1">
-                  Choose the interview settings that match your target.
-                </p>
-              </div>
-
-            </div>
-
-          </div>
-
-          <div className="p-6 md:p-9">
-
-            {/* ROLE + COMPANY */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-              <InputField
-                icon={<FaBriefcase />}
-                label="Target Role"
-                value={role}
-                onChange={(e) => {
-                  setRole(e.target.value);
-                  setError("");
-                }}
-                placeholder="e.g. MERN Stack Developer"
-              />
-
-              <InputField
-                icon={<FaBuilding />}
-                label="Target Company"
-                optional
-                value={company}
-                onChange={(e) =>
-                  setCompany(e.target.value)
-                }
-                placeholder="e.g. Amazon"
-              />
-
-            </div>
-
-            {/* OPTIONAL PERSONALIZATION CONTEXT */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-6">
-              <div>
-                <label className="block font-semibold text-gray-900 mb-2">Job Description <span className="text-gray-400 text-xs font-normal">Optional</span></label>
-                <textarea value={jobDescription} onChange={(e) => setJobDescription(e.target.value.slice(0, 10000))} maxLength={10000} rows={5} placeholder="Paste the target job description to generate role-specific questions..." className="w-full border border-[#F1D5E0] rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A53860] resize-y" />
-                <p className="text-xs text-gray-400 mt-1 text-right">{jobDescription.length}/10,000 characters</p>
-              </div>
-              <div>
-                <label className="block font-semibold text-gray-900 mb-2">Resume / Project Context <span className="text-gray-400 text-xs font-normal">Optional</span></label>
-                <textarea value={candidateContext} onChange={(e) => setCandidateContext(e.target.value.slice(0, 8000))} maxLength={8000} rows={5} placeholder="Paste a resume summary, skills, or project details for personalized questions..." className="w-full border border-[#F1D5E0] rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A53860] resize-y" />
-                <p className="text-xs text-gray-400 mt-1 text-right">{candidateContext.length}/8,000 characters</p>
-              </div>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">Pasted context is used to tailor this interview and is not stored in the saved interview session.</p>
-
-            {/* INTERVIEW TYPE */}
-            <div className="mt-8">
-
-              <SectionLabel
-                icon={<FaCode />}
-                title="Interview Type"
-              />
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-
-                {[
-                  "Technical",
-                  "Coding",
-                  "Behavioral",
-                  "System Design",
-                ].map((type) => (
-
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => {
-
-                      setInterviewType(type);
-
-                      if (type === "Coding") {
-                        setQuestionType("Coding");
-                      }
-
-                      if (
-                        type === "Behavioral" ||
-                        type === "System Design"
-                      ) {
-                        setQuestionType("Descriptive");
-                      }
-                    }}
-                    className={`py-3.5 rounded-xl border font-semibold transition ${
-                      interviewType === type
-                        ? "bg-[#670D2F] text-white border-[#670D2F]"
-                        : "bg-white text-gray-700 border-[#F1D5E0] hover:border-[#A53860]"
-                    }`}
-                  >
-                    {type}
-                  </button>
-
-                ))}
-
-              </div>
-
-            </div>
-
-            {/* QUESTION FORMAT */}
-            <div className="mt-8">
-
-              <SectionLabel
-                icon={<FaListAlt />}
-                title="Question Format"
-              />
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-
-                {[
-                  "MCQ",
-                  "Descriptive",
-                  "Coding",
-                ].map((type) => {
-
-                  const disabled =
-                    interviewType === "Coding" &&
-                    type !== "Coding";
-
-                  const disabledByType =
-                    (
-                      interviewType === "Behavioral" ||
-                      interviewType === "System Design"
-                    ) &&
-                    type !== "Descriptive";
-
-                  const isDisabled =
-                    disabled || disabledByType;
-
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      disabled={isDisabled}
-                      onClick={() =>
-                        setQuestionType(type)
-                      }
-                      className={`py-3.5 rounded-xl border font-semibold transition ${
-                        questionType === type
-                          ? "bg-[#670D2F] text-white border-[#670D2F]"
-                          : isDisabled
-                          ? "bg-[#FFF7FA] text-gray-400 border-[#F1D5E0] cursor-not-allowed"
-                          : "bg-white text-gray-700 border-[#F1D5E0] hover:border-[#A53860]"
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  );
-                })}
-
-              </div>
-
-            </div>
-
-            {/* SELECT OPTIONS */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-8">
-
-              <SelectField
-                icon={<FaChartLine />}
-                label="Difficulty"
-                value={difficulty}
-                onChange={(e) =>
-                  setDifficulty(e.target.value)
-                }
-                options={[
-                  "Easy",
-                  "Medium",
-                  "Hard",
-                ]}
-              />
-
-              <SelectField
-                icon={<FaGraduationCap />}
-                label="Experience Level"
-                value={experienceLevel}
-                onChange={(e) =>
-                  setExperienceLevel(
-                    e.target.value
-                  )
-                }
-                options={[
-                  "Fresher",
-                  "0–2 Years",
-                  "2–5 Years",
-                  "5+ Years",
-                ]}
-              />
-
-              <SelectField
-                icon={<FaLayerGroup />}
-                label="Number of Questions"
-                value={questionCount}
-                onChange={(e) =>
-                  setQuestionCount(
-                    Number(e.target.value)
-                  )
-                }
-                options={[
-                  5,
-                  10,
-                  15,
-                ]}
-                formatOption={(value) =>
-                  `${value} Questions`
-                }
-              />
-
-            </div>
-
-            {/* FOCUS AREAS */}
-            <div className="mt-8">
-
-              <SectionLabel
-                icon={<FaLayerGroup />}
-                title="Focus Areas"
-              />
-
-              <div className="flex flex-wrap gap-3">
-
-                {availableFocusAreas.map(
-                  (area) => {
-
-                    const selected =
-                      focusAreas.includes(area);
-
-                    return (
-                      <button
-                        key={area}
-                        type="button"
-                        onClick={() =>
-                          toggleFocusArea(area)
-                        }
-                        className={`px-4 py-2.5 rounded-full border text-sm font-semibold transition ${
-                          selected
-                            ? "bg-[#FCE5ED] text-[#670D2F] border-[#EF88AD]"
-                            : "bg-white text-gray-600 border-[#F1D5E0] hover:border-[#A53860]"
-                        }`}
-                      >
-                        {selected && (
-                          <FaCheck className="inline mr-2 text-xs" />
-                        )}
-
-                        {area}
-                      </button>
-                    );
-                  }
-                )}
-
-              </div>
-
-            </div>
-
-            {error && (
-              <p className="text-center text-red-500 font-medium mt-6">
-                {error}
-              </p>
-            )}
-
-            {/* START */}
-            <button
-              onClick={startInterview}
-              disabled={loading}
-              className="w-full mt-9 bg-[#670D2F] hover:bg-[#3A0519] text-white py-4 rounded-2xl font-bold text-lg shadow-md transition disabled:opacity-50"
-            >
-              {loading
-                ? "Generating Question..."
-                : "✨ Start AI Interview"}
-            </button>
-
-            <p className="text-center text-gray-400 text-sm mt-4">
-              Your configuration is used to personalize the interview.
+        <section className="relative overflow-hidden rounded-3xl bg-white border border-[#F1D5E0] p-6 md:p-9 mb-8">
+          <div className="absolute -right-16 -top-24 w-72 h-72 rounded-full bg-[#FFF0F5]" />
+          <div className="relative max-w-3xl">
+            <p className="text-xs md:text-sm font-bold tracking-[0.2em] uppercase text-[#A53860] mb-3">Practice · Improve · Succeed</p>
+            <h1 className="text-3xl md:text-5xl font-bold text-gray-900 leading-tight">
+              Your next interview starts <span className="text-[#A53860]">here.</span>
+            </h1>
+            <p className="text-gray-600 mt-4 text-base md:text-lg max-w-2xl">
+              Build a realistic practice session tailored to your target role, job description and experience.
             </p>
-
+            <div className="flex flex-wrap gap-3 mt-6 text-sm">
+              <span className="inline-flex items-center gap-2 rounded-full bg-[#FFF7FA] text-[#670D2F] px-3 py-2 font-semibold"><FaCheck /> Resume-aware questions</span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-[#FFF7FA] text-[#670D2F] px-3 py-2 font-semibold"><FaChartLine /> Detailed AI feedback</span>
+            </div>
           </div>
+        </section>
+
+        <section className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4">
+            <div>
+              <p className="text-xs font-bold tracking-widest uppercase text-[#A53860]">Quick start</p>
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 mt-1">Choose an interview template</h2>
+            </div>
+            <p className="text-sm text-gray-500">You can customize every setting below.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            {[
+              { title: "MERN Stack Developer", subtitle: "JavaScript · React · Node · MongoDB", icon: <FaCode />, role: "MERN Stack Developer", type: "Technical", format: "Descriptive", focus: ["JavaScript", "React", "Node.js", "MongoDB"] },
+              { title: "DSA Interview", subtitle: "Algorithms · Data structures", icon: <FaLayerGroup />, role: "Software Developer", type: "Coding", format: "Coding", focus: ["DSA"] },
+              { title: "HR Interview", subtitle: "Behavioral · Communication", icon: <FaGraduationCap />, role: "Software Engineer", type: "Behavioral", format: "Descriptive", focus: [] },
+              { title: "System Design", subtitle: "Architecture · Scalability", icon: <FaChartLine />, role: "Software Engineer", type: "System Design", format: "Descriptive", focus: ["System Design"] },
+            ].map((preset) => (
+              <button key={preset.title} type="button" onClick={() => applyPreset(preset)} className="group text-left bg-white border border-[#F1D5E0] hover:border-[#A53860] hover:shadow-md rounded-2xl p-4 transition">
+                <span className="w-10 h-10 rounded-xl bg-[#FFF7FA] text-[#670D2F] flex items-center justify-center text-lg mb-3">{preset.icon}</span>
+                <span className="block font-bold text-gray-900 group-hover:text-[#670D2F]">{preset.title}</span>
+                <span className="block text-xs text-gray-500 mt-1">{preset.subtitle}</span>
+                <span className="inline-flex items-center gap-1 text-xs text-[#A53860] font-semibold mt-3">Use template <FaChevronRight /></span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+          <main className="bg-white border border-[#F1D5E0] rounded-3xl shadow-sm overflow-hidden">
+            <div className="p-6 md:p-8 border-b border-[#FCE5ED]">
+              <div className="flex items-center gap-3">
+                <span className="w-11 h-11 rounded-xl bg-[#FFF7FA] text-[#670D2F] flex items-center justify-center text-lg"><FaBriefcase /></span>
+                <div>
+                  <p className="text-xs font-bold tracking-widest uppercase text-[#A53860]">Build your session</p>
+                  <h2 className="text-xl md:text-2xl font-bold text-gray-900">Interview configuration</h2>
+                  <p className="text-sm text-gray-500 mt-1">Add your target role and choose how you want to practice.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 md:p-8 space-y-8">
+              <section>
+                <SectionLabel icon={<FaBriefcase />} title="01 · Job & candidate profile" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <InputField icon={<FaBriefcase />} label="Target Role" value={role} onChange={(e) => { setRole(e.target.value); setError(""); }} placeholder="e.g. MERN Stack Developer" />
+                  <InputField icon={<FaBuilding />} label="Target Company" optional value={company} onChange={(e) => setCompany(e.target.value)} placeholder="e.g. Amazon" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+                  <div>
+                    <label className="block font-semibold text-gray-900 mb-2">Job Description <span className="text-gray-400 text-xs font-normal">Optional</span></label>
+                    <textarea value={jobDescription} onChange={(e) => setJobDescription(e.target.value.slice(0, 10000))} maxLength={10000} rows={5} placeholder="Paste the job description to generate role-specific questions..." className="w-full border border-[#F1D5E0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#A53860] focus:border-[#A53860] resize-y" />
+                    <p className="text-xs text-gray-400 mt-1 text-right">{jobDescription.length.toLocaleString()}/10,000</p>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-gray-900 mb-2">Resume / Project Context <span className="text-gray-400 text-xs font-normal">Optional</span></label>
+                    <textarea value={candidateContext} onChange={(e) => setCandidateContext(e.target.value.slice(0, 8000))} maxLength={8000} rows={5} placeholder="Add your skills, projects or resume summary for personalized questions..." className="w-full border border-[#F1D5E0] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#A53860] focus:border-[#A53860] resize-y" />
+                    <p className="text-xs text-gray-400 mt-1 text-right">{candidateContext.length.toLocaleString()}/8,000</p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Your pasted context helps personalize questions and is not stored in the saved interview session.</p>
+              </section>
+
+              <section className="border-t border-[#FCE5ED] pt-7">
+                <SectionLabel icon={<FaListAlt />} title="02 · Interview preferences" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <SelectField icon={<FaCode />} label="Interview Type" value={interviewType} onChange={(e) => { const next = e.target.value; setInterviewType(next); setQuestionType(next === "Coding" ? "Coding" : next === "Behavioral" || next === "System Design" ? "Descriptive" : "Descriptive"); }} options={["Technical", "Coding", "Behavioral", "System Design"]} />
+                  <SelectField icon={<FaListAlt />} label="Question Format" value={questionType} onChange={(e) => setQuestionType(e.target.value)} options={questionFormats} />
+                  <SelectField icon={<FaChartLine />} label="Difficulty" value={difficulty} onChange={(e) => setDifficulty(e.target.value)} options={["Easy", "Medium", "Hard"]} />
+                  <SelectField icon={<FaGraduationCap />} label="Experience Level" value={experienceLevel} onChange={(e) => setExperienceLevel(e.target.value)} options={["Fresher", "0–2 Years", "2–5 Years", "5+ Years"]} />
+                  <SelectField icon={<FaLayerGroup />} label="Number of Questions" value={questionCount} onChange={(e) => setQuestionCount(Number(e.target.value))} options={[5, 10, 15]} formatOption={(value) => `${value} Questions`} />
+                </div>
+              </section>
+
+              <section className="border-t border-[#FCE5ED] pt-7">
+                <SectionLabel icon={<FaLayerGroup />} title="03 · Focus areas" />
+                <p className="text-sm text-gray-500 mb-4">Select the skills you want the AI to emphasize. Leave all unselected for a general interview.</p>
+                <div className="flex flex-wrap gap-2.5">
+                  {availableFocusAreas.map((area) => {
+                    const selected = focusAreas.includes(area);
+                    return <button key={area} type="button" onClick={() => toggleFocusArea(area)} className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-semibold transition ${selected ? "bg-[#FCE5ED] text-[#670D2F] border-[#EF88AD]" : "bg-white text-gray-600 border-[#F1D5E0] hover:border-[#A53860]"}`}>
+                      {selected && <FaCheck className="text-xs" />}{area}
+                    </button>;
+                  })}
+                </div>
+              </section>
+
+              {error && <p role="alert" className="rounded-xl bg-red-50 border border-red-200 text-red-600 px-4 py-3 text-sm">{error}</p>}
+              <button onClick={startInterview} disabled={loading || !role.trim()} className="w-full inline-flex items-center justify-center gap-2 mt-1 bg-[#670D2F] hover:bg-[#3A0519] text-white py-4 rounded-xl font-bold text-base shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed">
+                {loading ? "Generating your first question..." : <><FaRobot /> Start AI Mock Interview <FaChevronRight /></>}
+              </button>
+              <p className="text-center text-xs text-gray-400">You can review your answers and AI feedback after completing the session.</p>
+            </div>
+          </main>
+
+          <aside className="space-y-4 lg:sticky lg:top-6">
+            <div className="bg-white border border-[#F1D5E0] rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-9 h-9 rounded-lg bg-[#FFF7FA] text-[#670D2F] flex items-center justify-center"><FaChartLine /></span>
+                <div><h3 className="font-bold text-gray-900">Session summary</h3><p className="text-xs text-gray-500">Updates as you configure</p></div>
+              </div>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between gap-3"><span className="text-gray-500">Target role</span><span className="font-semibold text-gray-900 text-right">{role.trim() || "Not set"}</span></div>
+                <div className="h-px bg-[#FCE5ED]" />
+                <div className="flex justify-between gap-3"><span className="text-gray-500">Company</span><span className="font-semibold text-gray-900 text-right">{company.trim() || "Any company"}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-gray-500">Interview type</span><span className="font-semibold text-gray-900">{interviewType}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-gray-500">Format</span><span className="font-semibold text-gray-900">{questionType}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-gray-500">Difficulty</span><span className="font-semibold text-gray-900">{difficulty}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-gray-500">Experience</span><span className="font-semibold text-gray-900">{experienceLevel}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-gray-500">Questions</span><span className="font-semibold text-gray-900">{questionCount}</span></div>
+                <div className="h-px bg-[#FCE5ED]" />
+                <p className="text-xs font-semibold text-gray-500">Focus areas</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {focusAreas.length ? focusAreas.map((area) => <span key={area} className="bg-[#FFF7FA] text-[#670D2F] border border-[#F1D5E0] rounded-full px-2.5 py-1 text-xs font-medium">{area}</span>) : <span className="text-xs text-gray-400">General coverage</span>}
+                </div>
+                <div className="h-px bg-[#FCE5ED]" />
+                <div className="flex items-center justify-between text-xs"><span className="text-gray-500">Job description</span><span className={jobDescription.trim() ? "text-[#670D2F] font-semibold" : "text-gray-400"}>{jobDescription.trim() ? "Added" : "Not added"}</span></div>
+                <div className="flex items-center justify-between text-xs"><span className="text-gray-500">Resume context</span><span className={candidateContext.trim() ? "text-[#670D2F] font-semibold" : "text-gray-400"}>{candidateContext.trim() ? "Added" : "Not added"}</span></div>
+              </div>
+            </div>
+            <div className="bg-[#FFF7FA] border border-[#F1D5E0] rounded-2xl p-5">
+              <h3 className="font-bold text-[#670D2F] flex items-center gap-2"><FaRobot /> What you'll get</h3>
+              <ul className="mt-3 space-y-2 text-sm text-gray-600">
+                <li className="flex gap-2"><FaCheck className="text-[#A53860] mt-1 shrink-0" /> Questions tailored to your role and context</li>
+                <li className="flex gap-2"><FaCheck className="text-[#A53860] mt-1 shrink-0" /> A final score and performance breakdown</li>
+                <li className="flex gap-2"><FaCheck className="text-[#A53860] mt-1 shrink-0" /> Feedback for each submitted answer</li>
+              </ul>
+            </div>
+          </aside>
         </div>
 
-        {/* WHAT YOU'LL PRACTICE */}
-        <div className="mt-12">
-
-          <div className="flex items-center justify-center gap-4 mb-7">
-
+        <section className="mt-10">
+          <div className="flex items-center justify-center gap-4 mb-6">
             <div className="h-px bg-[#F1D5E0] w-16" />
-
-            <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-              What you'll practice
-            </h2>
-
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900">What you'll practice</h2>
             <div className="h-px bg-[#F1D5E0] w-16" />
-
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-            <PracticeCard
-              icon={<FaBriefcase />}
-              title="Role-Specific"
-              description="Questions tailored to your target role and interview type."
-            />
-
-            <PracticeCard
-              icon={<FaChartLine />}
-              title="Adaptive Difficulty"
-              description="Choose the difficulty and experience level that fits you."
-            />
-
-            <PracticeCard
-              icon={<FaRobot />}
-              title="Detailed Feedback"
-              description="Get AI-powered evaluation after completing your interview."
-            />
-
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <PracticeCard icon={<FaBriefcase />} title="Role-specific questions" description="Practice questions aligned with your target job and interview type." />
+            <PracticeCard icon={<FaChartLine />} title="Adaptive preparation" description="Choose a difficulty and experience level that fits your goals." />
+            <PracticeCard icon={<FaRobot />} title="Detailed AI feedback" description="Review your strengths, improvement areas and stronger answer approaches." />
           </div>
-
-        </div>
-
+        </section>
       </div>
     </div>
   );
