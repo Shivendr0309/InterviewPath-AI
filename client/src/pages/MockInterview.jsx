@@ -21,6 +21,8 @@ function MockInterview() {
 
   const [role, setRole] = useState("");
   const [company, setCompany] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
+  const [candidateContext, setCandidateContext] = useState("");
 
   const [interviewType, setInterviewType] =
     useState("Technical");
@@ -100,6 +102,8 @@ function MockInterview() {
         {
           role,
           company,
+          jobDescription,
+          candidateContext,
           interviewType,
           questionType,
           difficulty,
@@ -148,6 +152,8 @@ function MockInterview() {
         {
           role,
           company,
+          jobDescription,
+          candidateContext,
           interviewType,
           questionType,
           difficulty,
@@ -196,6 +202,8 @@ function MockInterview() {
         {
           role,
           company,
+          jobDescription,
+          candidateContext,
           interviewType,
           questionType,
           difficulty,
@@ -289,6 +297,8 @@ function MockInterview() {
   const startNewInterview = () => {
     setRole("");
     setCompany("");
+    setJobDescription("");
+    setCandidateContext("");
 
     setInterviewType("Technical");
     setQuestionType("Descriptive");
@@ -532,14 +542,18 @@ function MockInterview() {
                   </p>
 
                   <div className="mt-5 pt-4 border-t border-[#F1D5E0]">
-                    <p className="text-xs uppercase tracking-wider text-gray-400 font-semibold">
-                      Your Answer
-                    </p>
-
-                    <p className="text-gray-700 mt-2 leading-relaxed">
-                      {item.answer}
-                    </p>
+                    <p className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Your Answer</p>
+                    <p className="text-gray-700 mt-2 leading-relaxed whitespace-pre-wrap">{item.answer}</p>
                   </div>
+                  {evaluation.questionFeedback?.[index] && (
+                    <div className="mt-4 rounded-xl border border-[#F1D5E0] bg-white p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-3"><p className="font-semibold text-[#670D2F]">AI feedback</p><span className="rounded-full bg-[#FCE5ED] px-3 py-1 text-sm font-bold text-[#670D2F]">{evaluation.questionFeedback[index].score ?? 0}/10</span></div>
+                      <p className="text-sm text-gray-700 leading-relaxed">{evaluation.questionFeedback[index].feedback}</p>
+                      {evaluation.questionFeedback[index].strengths?.length > 0 && <div><p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">What went well</p><ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">{evaluation.questionFeedback[index].strengths.map((entry, i) => <li key={i}>{entry}</li>)}</ul></div>}
+                      {evaluation.questionFeedback[index].improvements?.length > 0 && <div><p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Improve next time</p><ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">{evaluation.questionFeedback[index].improvements.map((entry, i) => <li key={i}>{entry}</li>)}</ul></div>}
+                      {evaluation.questionFeedback[index].idealAnswer && <div><p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Stronger answer approach</p><p className="text-sm text-gray-700 leading-relaxed">{evaluation.questionFeedback[index].idealAnswer}</p></div>}
+                    </div>
+                  )}
 
                 </div>
               ))}
@@ -861,6 +875,21 @@ function MockInterview() {
               />
 
             </div>
+
+            {/* OPTIONAL PERSONALIZATION CONTEXT */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-6">
+              <div>
+                <label className="block font-semibold text-gray-900 mb-2">Job Description <span className="text-gray-400 text-xs font-normal">Optional</span></label>
+                <textarea value={jobDescription} onChange={(e) => setJobDescription(e.target.value.slice(0, 10000))} maxLength={10000} rows={5} placeholder="Paste the target job description to generate role-specific questions..." className="w-full border border-[#F1D5E0] rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A53860] resize-y" />
+                <p className="text-xs text-gray-400 mt-1 text-right">{jobDescription.length}/10,000 characters</p>
+              </div>
+              <div>
+                <label className="block font-semibold text-gray-900 mb-2">Resume / Project Context <span className="text-gray-400 text-xs font-normal">Optional</span></label>
+                <textarea value={candidateContext} onChange={(e) => setCandidateContext(e.target.value.slice(0, 8000))} maxLength={8000} rows={5} placeholder="Paste a resume summary, skills, or project details for personalized questions..." className="w-full border border-[#F1D5E0] rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A53860] resize-y" />
+                <p className="text-xs text-gray-400 mt-1 text-right">{candidateContext.length}/8,000 characters</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">Pasted context is used to tailor this interview and is not stored in the saved interview session.</p>
 
             {/* INTERVIEW TYPE */}
             <div className="mt-8">

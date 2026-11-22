@@ -83,6 +83,11 @@ const interviewSessionSchema = new mongoose.Schema(
       default: [],
     },
 
+    questionFeedback: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+
     overallFeedback: {
       type: String,
       default: "",
