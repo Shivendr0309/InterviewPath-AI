@@ -30,3 +30,7 @@ export const submitCode = async (problemId, payload) => {
   const res = await api.post(`/submissions/${problemId}`, payload, authHeader());
   return res.data;
 };
+export const getSubmissionHistory = async (params = {}) => {
+  const res = await api.get("/submissions/history", { ...authHeader(), params });
+  return res.data.data;
+};

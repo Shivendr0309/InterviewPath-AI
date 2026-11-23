@@ -20,6 +20,7 @@ import CompanyDetails from "./pages/CompanyDetails";
 
 import CodingPractice from "./pages/CodingPractice";
 import ProblemDetail from "./pages/ProblemDetail";
+import SubmissionHistory from "./pages/SubmissionHistory";
 
 import RoleExplorer from "./pages/RoleExplorer";
 import InterviewExperience from "./pages/InterviewExperience";
@@ -143,6 +144,15 @@ function App() {
         element={
           <ProtectedRoute>
             <CodingPractice />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/coding-practice/history"
+        element={
+          <ProtectedRoute>
+            <SubmissionHistory />
           </ProtectedRoute>
         }
       />

@@ -12,7 +12,7 @@ import {
   FaRoute,
   FaMicrophone,
   FaFileAlt,
-  FaCode,
+  FaCode,\n  FaHistory,
   FaUsers,
   FaSignOutAlt,
   FaBars,
@@ -130,6 +130,11 @@ function DashboardLayout({
       to: "/coding-practice",
       label: "Coding Practice",
       icon: <FaCode />,
+    },
+    {
+      to: "/coding-practice/history",
+      label: "Submission History",
+      icon: <FaHistory />,
     },
     {
   to: "/interview-experiences",
