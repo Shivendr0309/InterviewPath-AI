@@ -25,7 +25,7 @@ export default function SubmissionHistory() {
   const [status, setStatus] = useState("All");
   const [language, setLanguage] = useState("All");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState("");\n  const [expandedCode, setExpandedCode] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -126,7 +126,7 @@ export default function SubmissionHistory() {
         {!loading && !error && data?.items?.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead><tr className="text-xs uppercase text-gray-500 border-b border-[var(--secondary)]"><th className="py-3 pr-4">Problem</th><th className="py-3 pr-4">Language</th><th className="py-3 pr-4">Result</th><th className="py-3 pr-4">Tests</th><th className="py-3">Submitted</th></tr></thead>
+              <thead><tr className="text-xs uppercase text-gray-500 border-b border-[var(--secondary)]"><th className="py-3 pr-4">Problem</th><th className="py-3 pr-4">Language</th><th className="py-3 pr-4">Result</th><th className="py-3 pr-4">Tests</th><th className="py-3">Submitted</th><th className="py-3 text-right">Code</th></tr></thead>
               <tbody>
                 {data.items.map((item) => (
                   <tr key={item._id} className="border-b border-[var(--secondary)] last:border-0">
@@ -137,7 +137,7 @@ export default function SubmissionHistory() {
                     <td className="py-4 pr-4">{item.language}</td>
                     <td className="py-4 pr-4"><span className={`inline-flex items-center gap-1 font-semibold ${item.passed ? "text-green-700" : "text-red-600"}`}>{item.passed ? <FaCheckCircle /> : <FaTimesCircle />}{item.passed ? "Accepted" : "Rejected"}</span></td>
                     <td className="py-4 pr-4">{item.testResults?.passed ?? 0}/{item.testResults?.total ?? 0}</td>
-                    <td className="py-4 whitespace-nowrap text-gray-500">{dateLabel(item.createdAt)}</td>
+                    <td className="py-4 whitespace-nowrap text-gray-500">{dateLabel(item.createdAt)}</td>\n                    <td className="py-4 text-right"><button onClick={() => setExpandedCode((current) => current === item._id ? null : item._id)} className="text-[var(--primary)] font-semibold hover:underline">{expandedCode === item._id ? "Hide code" : "View code"}</button></td>
                   </tr>
                 ))}
               </tbody>
