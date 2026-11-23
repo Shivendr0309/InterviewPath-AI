@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaArrowLeft, FaBookOpen, FaCalendarAlt, FaClock, FaLayerGroup,
-  FaTasks, FaChartLine, FaRobot, FaCheckCircle, FaHistory,
+  FaTasks, FaRobot, FaCheckCircle, FaHistory,
 } from "react-icons/fa";
 import api from "../api/axios";
 
