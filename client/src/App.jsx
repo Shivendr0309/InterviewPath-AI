@@ -20,7 +20,7 @@ import CompanyDetails from "./pages/CompanyDetails";
 
 import CodingPractice from "./pages/CodingPractice";
 import ProblemDetail from "./pages/ProblemDetail";
-import SubmissionHistory from "./pages/SubmissionHistory";\nimport SubmissionHistory from "./pages/SubmissionHistory";
+import SubmissionHistory from "./pages/SubmissionHistory";
 
 import RoleExplorer from "./pages/RoleExplorer";
 import InterviewExperience from "./pages/InterviewExperience";
