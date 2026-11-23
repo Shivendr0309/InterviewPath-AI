@@ -127,9 +127,10 @@ export default function SubmissionHistory() {
         {!loading && !error && data?.items?.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead><tr className="text-xs uppercase text-gray-500 border-b border-[var(--secondary)]"><th className="py-3 pr-4">Problem</th><th className="py-3 pr-4">Language</th><th className="py-3 pr-4">Result</th><th className="py-3 pr-4">Tests</th><th className="py-3">Submitted</th><th className="py-3 text-right">Code</th><th className="py-3 text-right">Code</th></tr></thead>
+              <thead><tr className="text-xs uppercase text-gray-500 border-b border-[var(--secondary)]"><th className="py-3 pr-4">Problem</th><th className="py-3 pr-4">Language</th><th className="py-3 pr-4">Result</th><th className="py-3 pr-4">Tests</th><th className="py-3">Submitted</th><th className="py-3 text-right">Code</th></tr></thead>
               <tbody>
                 {data.items.map((item) => (
+                  <>
                   <tr key={item._id} className="border-b border-[var(--secondary)] last:border-0">
                     <td className="py-4 pr-4 min-w-44">
                       {item.problemId ? <Link className="font-semibold text-[var(--primary)] hover:underline" to={`/coding-practice/${item.problemId._id}`}>{item.problemId.title}</Link> : <span className="text-gray-500">Problem unavailable</span>}
@@ -150,6 +151,7 @@ export default function SubmissionHistory() {
                       </td>
                     </tr>
                   )}
+                  </>
                 ))}
               </tbody>
             </table>
