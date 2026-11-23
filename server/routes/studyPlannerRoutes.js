@@ -1,12 +1,16 @@
 import express from "express";
-import { generateStudyPlan } from "../controllers/studyPlannerController.js";
+import {
+  generateStudyPlan,
+  getStudyPlans,
+  updateStudyTask,
+} from "../controllers/studyPlannerController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+
 const router = express.Router();
 
-router.post(
-  "/generate",
-  authMiddleware,
-  generateStudyPlan
-);
+router.use(authMiddleware);
+router.get("/", getStudyPlans);
+router.post("/generate", generateStudyPlan);
+router.patch("/:planId/tasks", updateStudyTask);
 
 export default router;
