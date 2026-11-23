@@ -132,6 +132,11 @@ function DashboardLayout({
       icon: <FaCode />,
     },
     {
+      to: "/coding-practice/history",
+      label: "Submission History",
+      icon: <FaHistory />,
+    },
+    {
   to: "/interview-experiences",
   label: "Interview Community",
   icon: <FaUsers />,
