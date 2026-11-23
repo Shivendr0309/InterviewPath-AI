@@ -1,541 +1,289 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FaArrowLeft,
-  FaBookOpen,
-  FaCalendarAlt,
-  FaClock,
-  FaInfoCircle,
-  FaLayerGroup,
-  FaTasks,
-  FaChartLine,
-  FaRobot,
+  FaArrowLeft, FaBookOpen, FaCalendarAlt, FaClock, FaLayerGroup,
+  FaTasks, FaChartLine, FaRobot, FaCheckCircle, FaHistory,
 } from "react-icons/fa";
 import api from "../api/axios";
 
+const completionKey = (day, taskIndex) => `${day}:${taskIndex}`;
+
 function StudyPlanner() {
   const navigate = useNavigate();
-
   const [topic, setTopic] = useState("");
   const [days, setDays] = useState("");
   const [hoursPerDay, setHoursPerDay] = useState("");
-
-  const [plan, setPlan] = useState([]);
+  const [skillLevel, setSkillLevel] = useState("Beginner");
+  const [activePlan, setActivePlan] = useState(null);
+  const [savedPlans, setSavedPlans] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [updatingTask, setUpdatingTask] = useState("");
   const [message, setMessage] = useState("");
+
+  const loadSavedPlans = useCallback(async () => {
+    try {
+      const response = await api.get("/study-planner");
+      setSavedPlans(response.data.plans || []);
+    } catch (error) {
+      setMessage(error.response?.data?.message || "Could not load your saved plans.");
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!localStorage.getItem("token")) {
+      setHistoryLoading(false);
+      setMessage("Please login to use your study planner.");
+      return;
+    }
+    loadSavedPlans();
+  }, [loadSavedPlans]);
+
+  const totalTasks = useMemo(
+    () => activePlan?.plan?.reduce((total, day) => total + (day.tasks?.length || 0), 0) || 0,
+    [activePlan]
+  );
+  const completedCount = activePlan?.completedTasks?.length || 0;
+  const progress = totalTasks ? Math.round((completedCount / totalTasks) * 100) : 0;
 
   const generatePlan = async () => {
     if (!topic.trim() || !days || !hoursPerDay) {
-      setMessage("Please fill in all fields");
+      setMessage("Please complete the topic, duration and daily study hours.");
       return;
     }
-
-    const token = localStorage.getItem("token");
-
-    if (!token) {
+    if (!localStorage.getItem("token")) {
       setMessage("Please login to generate a study plan.");
+      return;
+    }
+    const dayCount = Number(days);
+    const dailyHours = Number(hoursPerDay);
+    if (!Number.isInteger(dayCount) || dayCount < 1 || dayCount > 90) {
+      setMessage("Choose a duration between 1 and 90 days.");
+      return;
+    }
+    if (!Number.isFinite(dailyHours) || dailyHours < 0.5 || dailyHours > 12) {
+      setMessage("Study time must be between 0.5 and 12 hours per day.");
       return;
     }
 
     try {
       setLoading(true);
       setMessage("");
-      setPlan([]);
-
-      const res = await api.post(
-        "/study-planner/generate",
-        {
-          topic,
-          days: Number(days),
-          hoursPerDay: Number(hoursPerDay),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      setPlan(res.data.plan || []);
+      const response = await api.post("/study-planner/generate", {
+        topic: topic.trim(),
+        days: dayCount,
+        hoursPerDay: dailyHours,
+        skillLevel,
+      });
+      setActivePlan(response.data);
+      setTopic(response.data.topic || topic.trim());
+      await loadSavedPlans();
     } catch (error) {
-      setMessage(
-        error.response?.data?.message ||
-          "Failed to generate study plan"
-      );
+      setMessage(error.response?.data?.message || "Failed to generate study plan.");
     } finally {
       setLoading(false);
     }
   };
 
+  const toggleTask = async (day, taskIndex, checked) => {
+    if (!activePlan?.planId) return;
+    const key = completionKey(day, taskIndex);
+    const previous = activePlan.completedTasks || [];
+    const next = checked
+      ? [...previous.filter((item) => item.key !== key), { key }]
+      : previous.filter((item) => item.key !== key);
+    setActivePlan((current) => ({ ...current, completedTasks: next }));
+    setUpdatingTask(key);
+    try {
+      const response = await api.patch(`/study-planner/${activePlan.planId}/tasks`, {
+        day, taskIndex, completed: checked,
+      });
+      setActivePlan((current) => ({ ...current, completedTasks: response.data.completedTasks || [] }));
+      setSavedPlans((current) => current.map((item) =>
+        item._id === activePlan.planId ? { ...item, completedTasks: response.data.completedTasks || [] } : item
+      ));
+    } catch (error) {
+      setActivePlan((current) => ({ ...current, completedTasks: previous }));
+      setMessage(error.response?.data?.message || "Could not save task progress. Please try again.");
+    } finally {
+      setUpdatingTask("");
+    }
+  };
+
+  const openSavedPlan = (saved) => {
+    setActivePlan({
+      planId: saved._id,
+      topic: saved.topic,
+      days: saved.days,
+      hoursPerDay: saved.hoursPerDay,
+      skillLevel: saved.skillLevel || "Beginner",
+      plan: saved.plan || [],
+      completedTasks: saved.completedTasks || [],
+    });
+    setTopic(saved.topic);
+    setDays(String(saved.days));
+    setHoursPerDay(String(saved.hoursPerDay));
+    setSkillLevel(saved.skillLevel || "Beginner");
+    setMessage("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <div className="min-h-screen bg-[#FFFBFC] px-4 py-8 md:py-10">
       <div className="max-w-6xl mx-auto">
-
-        {/* =====================================================
-            HEADER
-        ====================================================== */}
         <div className="flex items-center justify-between mb-10">
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 text-gray-500 hover:text-[#A53860] transition"
-          >
-            <FaArrowLeft />
-            <span>Back</span>
+          <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-gray-500 hover:text-[#A53860] transition">
+            <FaArrowLeft /><span>Back</span>
           </button>
-
           <div className="inline-flex items-center gap-2 bg-white border border-[#F1D5E0] text-[#670D2F] px-4 py-2 rounded-full shadow-sm font-semibold text-sm">
-            <FaRobot />
-            AI Powered
+            <FaRobot /> AI Powered
           </div>
         </div>
 
-        {/* =====================================================
-            HERO
-        ====================================================== */}
         <div className="text-center mb-10">
-          <p className="text-sm font-semibold tracking-[0.2em] uppercase text-[#A53860] mb-3">
-            Personalized Learning
-          </p>
-
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
-            <span className="text-[#670D2F]">AI</span> Study Planner
-          </h1>
-
-          <p className="text-gray-600 text-base md:text-lg mt-4 max-w-2xl mx-auto">
-            Your personal roadmap to learn anything, the smart way.
-          </p>
+          <p className="text-sm font-semibold tracking-[0.2em] uppercase text-[#A53860] mb-3">Personalized Learning</p>
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900"><span className="text-[#670D2F]">AI</span> Study Planner</h1>
+          <p className="text-gray-600 text-base md:text-lg mt-4 max-w-2xl mx-auto">Build a realistic learning roadmap, track daily tasks and see your progress.</p>
         </div>
 
-        {/* =====================================================
-            MAIN PLANNER
-        ====================================================== */}
-        <div className="bg-white rounded-3xl border border-[#FCE5ED] shadow-sm overflow-hidden">
-
-          {/* TOP SECTION */}
-          <div className="p-6 md:p-9">
-
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-6 items-start">
+          <section className="bg-white rounded-3xl border border-[#FCE5ED] shadow-sm p-6 md:p-9">
             <div className="mb-7">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Let's build your{" "}
-                <span className="text-[#670D2F]">
-                  personalized study plan
-                </span>
-              </h2>
-
-              <p className="text-gray-500 text-sm mt-2">
-                Tell us what you want to learn and how much time
-                you can dedicate.
-              </p>
+              <h2 className="text-2xl font-bold text-gray-900">Build your <span className="text-[#670D2F]">personalized study plan</span></h2>
+              <p className="text-gray-500 text-sm mt-2">Set your goal, current level and available study time.</p>
             </div>
 
-            {/* =================================================
-                TOPIC
-            ================================================== */}
-            <div className="border border-[#FCE5ED] rounded-2xl p-5 bg-[#FFFEFF]">
+            <label className="block font-bold text-gray-900 mb-2">What do you want to study?</label>
+            <div className="relative mb-5">
+              <FaBookOpen className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A53860]" />
+              <input value={topic} onChange={(event) => { setTopic(event.target.value.slice(0, 100)); setMessage(""); }} maxLength={100}
+                placeholder="e.g. Data Structures and Algorithms, React, SQL"
+                className="w-full border border-[#F1D5E0] rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A53860]" />
+            </div>
 
-              <div className="flex gap-4 items-start">
-
-                <div className="w-12 h-12 shrink-0 rounded-xl bg-[#FFF7FA] text-[#670D2F] flex items-center justify-center text-xl">
-                  <FaBookOpen />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className="block font-bold text-gray-900 mb-2">Duration (days)</label>
+                <div className="relative">
+                  <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A53860]" />
+                  <input type="number" min="1" max="90" value={days} onChange={(event) => setDays(event.target.value)}
+                    placeholder="e.g. 30" className="w-full border border-[#F1D5E0] rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A53860]" />
                 </div>
-
-                <div className="flex-1">
-
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="font-bold text-gray-900">
-                      What do you want to study?
-                    </label>
-
-                    <span className="text-xs text-gray-400">
-                      {topic.length}/100
-                    </span>
-                  </div>
-
-                  <input
-                    type="text"
-                    value={topic}
-                    onChange={(e) => {
-                      setTopic(e.target.value);
-                      setMessage("");
-                    }}
-                    placeholder="e.g. Data Structures and Algorithms, System Design, Python"
-                    maxLength={100}
-                    className="w-full border border-[#F1D5E0] rounded-xl px-4 py-3 text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#A53860] focus:border-[#A53860]"
-                  />
+              </div>
+              <div>
+                <label className="block font-bold text-gray-900 mb-2">Study hours per day</label>
+                <div className="relative">
+                  <FaClock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A53860]" />
+                  <input type="number" min="0.5" max="12" step="0.5" value={hoursPerDay} onChange={(event) => setHoursPerDay(event.target.value)}
+                    placeholder="e.g. 3" className="w-full border border-[#F1D5E0] rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A53860]" />
                 </div>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block font-bold text-gray-900 mb-2">Your current skill level</label>
+                <select value={skillLevel} onChange={(event) => setSkillLevel(event.target.value)}
+                  className="w-full border border-[#F1D5E0] rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#A53860]">
+                  <option>Beginner</option><option>Intermediate</option><option>Advanced</option>
+                </select>
+                <p className="text-xs text-gray-400 mt-2">The AI adjusts the pace and depth of the plan to this level.</p>
               </div>
             </div>
 
-            {/* =================================================
-                DAYS + HOURS
-            ================================================== */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
-
-              {/* DAYS */}
-              <div className="border border-[#FCE5ED] rounded-2xl p-5 bg-[#FFFEFF]">
-
-                <div className="flex gap-4 items-start">
-
-                  <div className="w-12 h-12 shrink-0 rounded-xl bg-[#FFF7FA] text-[#A53860] flex items-center justify-center text-xl">
-                    <FaCalendarAlt />
-                  </div>
-
-                  <div className="flex-1">
-
-                    <label className="block font-bold text-gray-900 mb-2">
-                      Number of Days
-                    </label>
-
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min="1"
-                        value={days}
-                        onChange={(e) => {
-                          setDays(e.target.value);
-                          setMessage("");
-                        }}
-                        placeholder="e.g. 30"
-                        className="w-full border border-[#F1D5E0] rounded-xl px-4 py-3 pr-12 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#A53860] focus:border-[#A53860]"
-                      />
-
-                      <FaCalendarAlt className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A53860]" />
-                    </div>
-
-                  </div>
-                </div>
+            <div className="mt-6 flex flex-col sm:flex-row gap-4 items-stretch">
+              <div className="flex-1 bg-[#FFF7FA] border border-[#FCE5ED] rounded-2xl p-4 text-sm text-gray-600">
+                Your plan will include daily topics and actionable tasks, with revision and practice built into the schedule.
               </div>
-
-              {/* HOURS */}
-              <div className="border border-[#FCE5ED] rounded-2xl p-5 bg-[#FFFEFF]">
-
-                <div className="flex gap-4 items-start">
-
-                  <div className="w-12 h-12 shrink-0 rounded-xl bg-[#FFF7FA] text-[#A53860] flex items-center justify-center text-xl">
-                    <FaClock />
-                  </div>
-
-                  <div className="flex-1">
-
-                    <label className="block font-bold text-gray-900 mb-2">
-                      Study Hours Per Day
-                    </label>
-
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min="1"
-                        step="0.5"
-                        value={hoursPerDay}
-                        onChange={(e) => {
-                          setHoursPerDay(e.target.value);
-                          setMessage("");
-                        }}
-                        placeholder="e.g. 3"
-                        className="w-full border border-[#F1D5E0] rounded-xl px-4 py-3 pr-12 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#A53860] focus:border-[#A53860]"
-                      />
-
-                      <FaClock className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A53860]" />
-                    </div>
-
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            {/* =================================================
-                INFO + BUTTON
-            ================================================== */}
-            <div className="mt-5 flex flex-col md:flex-row gap-4 items-stretch">
-
-              <div className="flex-1 bg-[#FFF7FA] border border-[#FCE5ED] rounded-2xl p-4 flex items-start gap-3">
-
-                <FaInfoCircle className="text-[#670D2F] mt-1 shrink-0" />
-
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  We'll create a day-by-day plan with topics,
-                  resources and tasks tailored to your goal and
-                  available study time.
-                </p>
-
-              </div>
-
-              <button
-                onClick={generatePlan}
-                disabled={loading}
-                className="md:w-64 bg-[#670D2F] hover:bg-[#3A0519] text-white font-bold px-6 py-4 rounded-2xl transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading
-                  ? "Generating Study Plan..."
-                  : "Generate Study Plan"}
+              <button onClick={generatePlan} disabled={loading}
+                className="sm:w-64 bg-[#670D2F] hover:bg-[#3A0519] text-white font-bold px-6 py-4 rounded-2xl transition shadow-md disabled:opacity-50">
+                {loading ? "Generating plan..." : "Generate Study Plan"}
               </button>
-
             </div>
+            {message && <p role="alert" className="mt-4 text-sm text-red-600">{message}</p>}
+            <p className="text-xs text-gray-400 mt-5">Plans are saved to your account so you can return and continue tracking progress.</p>
+          </section>
 
-            {message && (
-              <div className="mt-4 text-center font-medium text-red-500 text-sm">
-                {message}
-              </div>
-            )}
-
-            <p className="text-center text-xs text-gray-400 mt-5">
-              🔒 Your study plan is generated privately for your session.
-            </p>
-
-          </div>
-
-          {/* =================================================
-              WHAT YOU'LL GET
-          ================================================== */}
-          <div className="border-t border-[#FCE5ED] bg-[#FFFBFC] p-6 md:p-8">
-
-            <div className="flex items-center justify-center gap-4 mb-7">
-
-              <div className="h-px bg-[#F1D5E0] flex-1 max-w-20" />
-
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-                What you'll get
-              </h2>
-
-              <div className="h-px bg-[#F1D5E0] flex-1 max-w-20" />
-
+          <aside className="bg-white rounded-3xl border border-[#FCE5ED] shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <FaHistory className="text-[#670D2F]" /><h2 className="font-bold text-gray-900">Saved study plans</h2>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-              {/* CARD 1 */}
-              <div className="bg-white border border-[#FCE5ED] rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition">
-
-                <div className="w-11 h-11 rounded-xl bg-[#FFF7FA] text-[#670D2F] flex items-center justify-center">
-                  <FaCalendarAlt />
+            {historyLoading ? <p className="text-sm text-gray-400">Loading saved plans...</p> :
+              savedPlans.length === 0 ? <p className="text-sm text-gray-500">Your generated plans will appear here.</p> :
+                <div className="space-y-2">
+                  {savedPlans.map((saved) => {
+                    const count = saved.plan?.reduce((sum, item) => sum + (item.tasks?.length || 0), 0) || 0;
+                    const done = saved.completedTasks?.length || 0;
+                    const percent = count ? Math.round(done / count * 100) : 0;
+                    return <button key={saved._id} onClick={() => openSavedPlan(saved)}
+                      className={`w-full text-left border rounded-xl p-3 transition ${activePlan?.planId === saved._id ? "border-[#A53860] bg-[#FFF7FA]" : "border-[#F1D5E0] hover:border-[#A53860]"}`}>
+                      <span className="block font-semibold text-sm text-gray-800 truncate">{saved.topic}</span>
+                      <span className="block text-xs text-gray-500 mt-1">{saved.days} days · {saved.skillLevel || "Beginner"}</span>
+                      <span className="block h-1.5 bg-gray-100 rounded-full mt-3 overflow-hidden"><span className="block h-full bg-[#A53860] rounded-full" style={{ width: `${percent}%` }} /></span>
+                      <span className="block text-xs text-gray-400 mt-1">{percent}% complete</span>
+                    </button>;
+                  })}
                 </div>
-
-                <h3 className="font-bold mt-4">
-                  Day-by-Day Plan
-                </h3>
-
-                <p className="text-gray-500 text-sm mt-1.5 leading-relaxed">
-                  Structured roadmap for each day
-                </p>
-
-              </div>
-
-              {/* CARD 2 */}
-              <div className="bg-white border border-[#FCE5ED] rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition">
-
-                <div className="w-11 h-11 rounded-xl bg-[#FFF7FA] text-[#A53860] flex items-center justify-center">
-                  <FaLayerGroup />
-                </div>
-
-                <h3 className="font-bold mt-4">
-                  Topics & Subtopics
-                </h3>
-
-                <p className="text-gray-500 text-sm mt-1.5 leading-relaxed">
-                  Organized learning with key concepts
-                </p>
-
-              </div>
-
-              {/* CARD 3 */}
-              <div className="bg-white border border-[#FCE5ED] rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition">
-
-                <div className="w-11 h-11 rounded-xl bg-[#FFF7FA] text-[#A53860] flex items-center justify-center">
-                  <FaTasks />
-                </div>
-
-                <h3 className="font-bold mt-4">
-                  Tasks & Practice
-                </h3>
-
-                <p className="text-gray-500 text-sm mt-1.5 leading-relaxed">
-                  Daily tasks to help you stay consistent
-                </p>
-
-              </div>
-
-              {/* CARD 4 */}
-              <div className="bg-white border border-[#FCE5ED] rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition">
-
-                <div className="w-11 h-11 rounded-xl bg-[#FFF7FA] text-[#670D2F] flex items-center justify-center">
-                  <FaChartLine />
-                </div>
-
-                <h3 className="font-bold mt-4">
-                  Smart & Balanced
-                </h3>
-
-                <p className="text-gray-500 text-sm mt-1.5 leading-relaxed">
-                  AI balances theory, practice and revision
-                </p>
-
-              </div>
-
-            </div>
-
-          </div>
-
+            }
+          </aside>
         </div>
 
-        {/* =====================================================
-            GENERATED PLAN
-        ====================================================== */}
-        {plan.length > 0 && (
-          <div className="mt-14">
-
-            {/* SECTION HEADER */}
-            <div className="mb-8">
-
-              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-
+        {activePlan?.plan?.length > 0 && (
+          <section className="mt-12">
+            <div className="bg-white border border-[#FCE5ED] rounded-2xl p-6 md:p-7 mb-5">
+              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.15em] text-[#A53860] mb-2">
-                    Your Roadmap
-                  </p>
-
-                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-                    Your Study Plan
-                  </h2>
-
-                  <p className="text-gray-500 mt-2">
-                    Personalized plan generated for{" "}
-                    <span className="font-semibold text-[#670D2F]">
-                      {topic}
-                    </span>
-                  </p>
+                  <p className="text-sm font-semibold uppercase tracking-wider text-[#A53860]">Your roadmap</p>
+                  <h2 className="text-3xl font-bold text-gray-900 mt-1">{activePlan.topic}</h2>
+                  <p className="text-sm text-gray-500 mt-2">{activePlan.days} days · {activePlan.hoursPerDay} hours/day · {activePlan.skillLevel}</p>
                 </div>
-
-                <div className="flex items-center gap-2 bg-white border border-[#F1D5E0] rounded-full px-4 py-2 text-sm text-gray-600">
-                  <FaClock className="text-[#A53860]" />
-                  {hoursPerDay} hrs / day
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-[#670D2F]">{progress}%</p>
+                  <p className="text-xs text-gray-500">{completedCount} of {totalTasks} tasks complete</p>
                 </div>
-
               </div>
-
+              <div className="h-2.5 bg-[#FCE5ED] rounded-full mt-5 overflow-hidden">
+                <div className="h-full bg-[#A53860] rounded-full transition-all" style={{ width: `${progress}%` }} />
+              </div>
+              {progress === 100 && <p className="text-sm text-green-700 font-semibold mt-3 flex items-center gap-2"><FaCheckCircle /> You completed this study plan. Great work!</p>}
             </div>
 
-            {/* PLAN */}
             <div className="space-y-5">
-
-              {plan.map((dayPlan) => (
-
-                <div
-                  key={dayPlan.day}
-                  className="bg-white border border-[#FCE5ED] rounded-2xl shadow-sm overflow-hidden"
-                >
-
-                  {/* DAY HEADER */}
-                  <div className="px-6 md:px-7 py-5 border-b border-[#FCE5ED] flex items-center justify-between bg-[#FFFDFE]">
-
+              {activePlan.plan.map((dayPlan) => (
+                <article key={dayPlan.day} className="bg-white border border-[#FCE5ED] rounded-2xl shadow-sm overflow-hidden">
+                  <header className="px-6 py-5 border-b border-[#FCE5ED] flex items-center justify-between bg-[#FFFDFE]">
                     <div className="flex items-center gap-4">
-
-                      <div className="w-11 h-11 rounded-xl bg-[#670D2F] text-white flex items-center justify-center font-bold">
-                        {dayPlan.day}
-                      </div>
-
-                      <div>
-                        <p className="text-xs uppercase tracking-wider text-gray-400 font-semibold">
-                          Study Day
-                        </p>
-
-                        <h3 className="text-xl font-bold text-[#670D2F]">
-                          Day {dayPlan.day}
-                        </h3>
-                      </div>
-
+                      <div className="w-11 h-11 rounded-xl bg-[#670D2F] text-white flex items-center justify-center font-bold">{dayPlan.day}</div>
+                      <div><p className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Study day</p><h3 className="text-xl font-bold text-[#670D2F]">Day {dayPlan.day}</h3></div>
                     </div>
-
-                    <span className="text-sm font-semibold bg-[#FFF7FA] text-[#670D2F] px-4 py-2 rounded-full">
-                      {hoursPerDay} hrs
-                    </span>
-
-                  </div>
-
-                  {/* CONTENT */}
-                  <div className="p-6 md:p-7 grid grid-cols-1 md:grid-cols-2 gap-8">
-
-                    {/* TOPICS */}
+                    <span className="text-sm font-semibold bg-[#FFF7FA] text-[#670D2F] px-4 py-2 rounded-full">{activePlan.hoursPerDay} hrs</span>
+                  </header>
+                  <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-7">
                     <div>
-
-                      <div className="flex items-center gap-2 mb-4">
-
-                        <div className="w-8 h-8 rounded-lg bg-[#FFF7FA] flex items-center justify-center">
-                          <FaLayerGroup className="text-[#670D2F] text-sm" />
-                        </div>
-
-                        <h4 className="font-bold text-gray-900">
-                          Topics
-                        </h4>
-
+                      <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-3"><FaLayerGroup className="text-[#670D2F]" /> Topics</h4>
+                      <div className="space-y-2">
+                        {dayPlan.topics?.map((item, index) => <div key={index} className="bg-[#FFF7FA] border border-[#FCE5ED] rounded-xl px-4 py-3 text-sm text-gray-700">{item}</div>)}
                       </div>
-
-                      <div className="space-y-2.5">
-
-                        {dayPlan.topics?.map((item, index) => (
-
-                          <div
-                            key={index}
-                            className="flex items-start gap-3 bg-[#FFF7FA] border border-[#FCE5ED] rounded-xl px-4 py-3 text-sm text-gray-700"
-                          >
-                            <span className="w-5 h-5 rounded-full bg-white border border-[#E9C8D6] text-[#A53860] flex items-center justify-center text-[10px] shrink-0 mt-0.5">
-                              {index + 1}
-                            </span>
-
-                            <span>{item}</span>
-                          </div>
-
-                        ))}
-
-                      </div>
-
                     </div>
-
-                    {/* TASKS */}
                     <div>
-
-                      <div className="flex items-center gap-2 mb-4">
-
-                        <div className="w-8 h-8 rounded-lg bg-[#FFF7FA] flex items-center justify-center">
-                          <FaTasks className="text-[#A53860] text-sm" />
-                        </div>
-
-                        <h4 className="font-bold text-gray-900">
-                          Tasks
-                        </h4>
-
+                      <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-3"><FaTasks className="text-[#A53860]" /> Tasks · {dayPlan.tasks?.filter((_, index) => (activePlan.completedTasks || []).some((entry) => entry.key === completionKey(dayPlan.day, index))).length || 0}/{dayPlan.tasks?.length || 0}</h4>
+                      <div className="space-y-2">
+                        {dayPlan.tasks?.map((item, index) => {
+                          const key = completionKey(dayPlan.day, index);
+                          const checked = (activePlan.completedTasks || []).some((entry) => entry.key === key);
+                          return <label key={key} className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition ${checked ? "bg-[#F3FAF5] border-green-200 text-gray-500" : "bg-gray-50 border-gray-200 text-gray-700"}`}>
+                            <input type="checkbox" checked={checked} disabled={updatingTask === key} onChange={(event) => toggleTask(dayPlan.day, index, event.target.checked)}
+                              className="mt-0.5 accent-[#670D2F]" />
+                            <span className={checked ? "line-through" : ""}>{item}</span>
+                          </label>;
+                        })}
                       </div>
-
-                      <div className="space-y-2.5">
-
-                        {dayPlan.tasks?.map((item, index) => (
-
-                          <div
-                            key={index}
-                            className="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700"
-                          >
-                            <span className="w-5 h-5 rounded-full border border-[#D9B0C1] bg-white shrink-0 mt-0.5" />
-
-                            <span>{item}</span>
-                          </div>
-
-                        ))}
-
-                      </div>
-
                     </div>
-
                   </div>
-
-                </div>
-
+                </article>
               ))}
-
             </div>
-
-          </div>
+          </section>
         )}
-
       </div>
     </div>
   );
