@@ -12,7 +12,7 @@ import {
   FaRoute,
   FaMicrophone,
   FaFileAlt,
-  FaCode,
+  FaCode,\n  FaHistory,
   FaUsers,
   FaSignOutAlt,
   FaBars,
